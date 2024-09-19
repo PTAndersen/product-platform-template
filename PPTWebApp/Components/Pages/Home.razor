@@ -1,0 +1,34 @@
+﻿@page "/"
+@using Microsoft.AspNetCore.Components
+@using PPTWebApp.Components.Pages.Sections
+
+<PageTitle>Home</PageTitle>
+
+<div class="container-fluid scroll-container">
+    @foreach (var module in Modules)
+    {
+        <section class="scroll-section" id="section@(module.Id)">
+            <DynamicComponent Type="@module.ComponentType" />
+        </section>
+    }
+</div>
+
+@code {
+    public class Module
+    {
+        public Type ComponentType { get; set; }
+        public string Id { get; set; }
+    }
+
+    private List<Module> Modules { get; set; }
+
+    protected override void OnInitialized()
+    {
+        Modules = new List<Module>
+        {
+            new Module { ComponentType = typeof(Highlights), Id = "1" },
+            new Module { ComponentType = typeof(Video), Id = "2" },
+            new Module { ComponentType = typeof(Highlights), Id = "3" }
+        };
+    }
+}
