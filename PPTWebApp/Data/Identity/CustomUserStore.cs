@@ -1,5 +1,4 @@
 ﻿using Microsoft.AspNetCore.Identity;
-using Microsoft.Data.SqlClient;
 using Npgsql;
 using PPTWebApp.Data;
 using System.Data;
@@ -259,9 +258,9 @@ public class CustomUserStore : IUserStore<ApplicationUser>, IUserPasswordStore<A
     {
         cancellationToken.ThrowIfCancellationRequested();
 
-        using (var connection = new SqlConnection(_connectionString))
+        using (var connection = new NpgsqlConnection(_connectionString))
         {
-            var command = new SqlCommand(@"
+            var command = new NpgsqlCommand(@"
             SELECT COUNT(*)
             FROM AspNetUserRoles ur
             INNER JOIN AspNetRoles r ON ur.RoleId = r.Id
