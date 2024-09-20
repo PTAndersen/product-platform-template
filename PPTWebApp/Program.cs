@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Identity;
 using PPTWebApp.Components;
@@ -15,6 +16,15 @@ builder.Services.AddScoped<IRoleStore<IdentityRole>>(provider => new CustomRoleS
 
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
+
+
+builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
+    .AddCookie(options =>
+    {
+        options.LoginPath = "/account/login";
+        options.LogoutPath = "/account/logout";
+    });
+
 
 builder.Services.AddCascadingAuthenticationState();
 builder.Services.AddScoped<IdentityUserAccessor>();

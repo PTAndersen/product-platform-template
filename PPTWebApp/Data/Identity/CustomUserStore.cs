@@ -5,7 +5,7 @@ using System.Data;
 using System.Threading;
 using System.Threading.Tasks;
 
-public class CustomUserStore : IUserStore<ApplicationUser>, IUserPasswordStore<ApplicationUser>, IUserRoleStore<ApplicationUser>
+public class CustomUserStore : IUserStore<ApplicationUser>, IUserPasswordStore<ApplicationUser>, IUserRoleStore<ApplicationUser>, IUserEmailStore<ApplicationUser>
 {
     private readonly string _connectionString;
 
@@ -14,41 +14,56 @@ public class CustomUserStore : IUserStore<ApplicationUser>, IUserPasswordStore<A
         _connectionString = connectionString;
     }
 
+    #region IUserStore Implementation
+
     public async Task<IdentityResult> CreateAsync(ApplicationUser user, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
 
-        using (var connection = new NpgsqlConnection(_connectionString))
+        try
         {
-            var command = new NpgsqlCommand(
-                @"INSERT INTO AspNetUsers 
-              (UserName, PasswordHash, NormalizedUserName, Email, NormalizedEmail, EmailConfirmed, PhoneNumber, PhoneNumberConfirmed, TwoFactorEnabled, LockoutEnabled, AccessFailedCount, SecurityStamp, ConcurrencyStamp)
-              VALUES 
-              (@username, @passwordHash, @normalizedUserName, @Email, @normalizedEmail, @EmailConfirmed, @phoneNumber, @phoneNumberConfirmed, @twoFactorEnabled, @lockoutEnabled, @accessFailedCount, @securityStamp, @concurrencyStamp)", connection);
+            using (var connection = new NpgsqlConnection(_connectionString))
+            {
+                var command = new NpgsqlCommand(
+                    @"INSERT INTO AspNetUsers 
+                  (Id, UserName, PasswordHash, NormalizedUserName, Email, NormalizedEmail, EmailConfirmed, PhoneNumber, PhoneNumberConfirmed, TwoFactorEnabled, LockoutEnabled, AccessFailedCount, SecurityStamp, ConcurrencyStamp, LockoutEnd)
+                  VALUES 
+                  (@Id, @username, @passwordHash, @normalizedUserName, @Email, @normalizedEmail, @EmailConfirmed, @phoneNumber, @phoneNumberConfirmed, @twoFactorEnabled, @lockoutEnabled, @accessFailedCount, @securityStamp, @concurrencyStamp, @lockoutEnd)", connection);
 
-            command.Parameters.AddWithValue("@username", user.UserName ?? (object)DBNull.Value);
-            command.Parameters.AddWithValue("@passwordHash", user.PasswordHash ?? (object)DBNull.Value);
-            command.Parameters.AddWithValue("@normalizedUserName", user.NormalizedUserName ?? (object)DBNull.Value);
-            command.Parameters.AddWithValue("@Email", user.Email ?? (object)DBNull.Value);
-            command.Parameters.AddWithValue("@normalizedEmail", user.NormalizedEmail ?? (object)DBNull.Value);
-            command.Parameters.AddWithValue("@EmailConfirmed", user.EmailConfirmed);
-            command.Parameters.AddWithValue("@phoneNumber", user.PhoneNumber ?? (object)DBNull.Value);
-            command.Parameters.AddWithValue("@phoneNumberConfirmed", user.PhoneNumberConfirmed);
-            command.Parameters.AddWithValue("@twoFactorEnabled", user.TwoFactorEnabled);
-            command.Parameters.AddWithValue("@lockoutEnabled", user.LockoutEnabled);
-            command.Parameters.AddWithValue("@accessFailedCount", user.AccessFailedCount);
-            command.Parameters.AddWithValue("@securityStamp", user.SecurityStamp ?? (object)DBNull.Value);
-            command.Parameters.AddWithValue("@concurrencyStamp", user.ConcurrencyStamp ?? (object)DBNull.Value);
 
-            connection.Open();
-            await command.ExecuteNonQueryAsync(cancellationToken);
+                command.Parameters.AddWithValue("@Id", Guid.Parse(user.Id));
+                command.Parameters.AddWithValue("@username", user.UserName ?? (object)DBNull.Value);
+                command.Parameters.AddWithValue("@passwordHash", user.PasswordHash ?? (object)DBNull.Value);
+                command.Parameters.AddWithValue("@normalizedUserName", user.NormalizedUserName ?? (object)DBNull.Value);
+                command.Parameters.AddWithValue("@Email", user.Email ?? (object)DBNull.Value);
+                command.Parameters.AddWithValue("@normalizedEmail", user.NormalizedEmail ?? (object)DBNull.Value);
+                command.Parameters.AddWithValue("@EmailConfirmed", user.EmailConfirmed);
+                command.Parameters.AddWithValue("@phoneNumber", user.PhoneNumber ?? (object)DBNull.Value);
+                command.Parameters.AddWithValue("@phoneNumberConfirmed", user.PhoneNumberConfirmed);
+                command.Parameters.AddWithValue("@twoFactorEnabled", user.TwoFactorEnabled);
+                command.Parameters.AddWithValue("@lockoutEnabled", user.LockoutEnabled);
+                command.Parameters.AddWithValue("@accessFailedCount", user.AccessFailedCount);
+                command.Parameters.AddWithValue("@securityStamp", user.SecurityStamp ?? (object)DBNull.Value);
+                command.Parameters.AddWithValue("@concurrencyStamp", user.ConcurrencyStamp ?? (object)DBNull.Value);
+                command.Parameters.AddWithValue("@lockoutEnd", user.LockoutEnd ?? (object)DBNull.Value);
+
+                connection.Open();
+                await command.ExecuteNonQueryAsync(cancellationToken);
+            }
+
+            return IdentityResult.Success;
         }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error creating user: {ex.Message}");
 
-        return IdentityResult.Success;
+            return IdentityResult.Failed(new IdentityError
+            {
+                Code = "UserCreationFailed",
+                Description = $"An error occurred while creating the user: {ex.Message}"
+            });
+        }
     }
-
-
-
 
 
     public async Task<IdentityResult> UpdateAsync(ApplicationUser user, CancellationToken cancellationToken)
@@ -57,11 +72,17 @@ public class CustomUserStore : IUserStore<ApplicationUser>, IUserPasswordStore<A
 
         using (var connection = new NpgsqlConnection(_connectionString))
         {
-            var command = new NpgsqlCommand("UPDATE AspNetUsers SET UserName = @username, PasswordHash = @passwordHash, NormalizedUserName = @normalizedUserName WHERE Id = @userId", connection);
-            command.Parameters.AddWithValue("@username", user.UserName);
-            command.Parameters.AddWithValue("@passwordHash", user.PasswordHash);
-            command.Parameters.AddWithValue("@normalizedUserName", user.NormalizedUserName);
-            command.Parameters.AddWithValue("@userId", user.Id);
+            var command = new NpgsqlCommand(
+                @"UPDATE aspnetusers 
+              SET UserName = @username, 
+                  PasswordHash = @passwordHash, 
+                  NormalizedUserName = @normalizedUserName 
+              WHERE Id = @userId", connection);
+
+            command.Parameters.AddWithValue("@username", user.UserName ?? (object)DBNull.Value);
+            command.Parameters.AddWithValue("@passwordHash", user.PasswordHash ?? (object)DBNull.Value);
+            command.Parameters.AddWithValue("@normalizedUserName", user.NormalizedUserName ?? (object)DBNull.Value);
+            command.Parameters.Add("@userId", NpgsqlTypes.NpgsqlDbType.Uuid).Value = Guid.Parse(user.Id);
 
             connection.Open();
             await command.ExecuteNonQueryAsync(cancellationToken);
@@ -69,6 +90,7 @@ public class CustomUserStore : IUserStore<ApplicationUser>, IUserPasswordStore<A
 
         return IdentityResult.Success;
     }
+
 
     public async Task<IdentityResult> DeleteAsync(ApplicationUser user, CancellationToken cancellationToken)
     {
@@ -76,8 +98,9 @@ public class CustomUserStore : IUserStore<ApplicationUser>, IUserPasswordStore<A
 
         using (var connection = new NpgsqlConnection(_connectionString))
         {
-            var command = new NpgsqlCommand("DELETE FROM AspNetUsers WHERE Id = @userId", connection);
-            command.Parameters.AddWithValue("@userId", user.Id);
+            var command = new NpgsqlCommand("DELETE FROM aspnetusers WHERE Id = @userId", connection);
+
+            command.Parameters.Add("@userId", NpgsqlTypes.NpgsqlDbType.Uuid).Value = Guid.Parse(user.Id);
 
             connection.Open();
             await command.ExecuteNonQueryAsync(cancellationToken);
@@ -86,27 +109,32 @@ public class CustomUserStore : IUserStore<ApplicationUser>, IUserPasswordStore<A
         return IdentityResult.Success;
     }
 
-    public async Task<ApplicationUser> FindByIdAsync(string userId, CancellationToken cancellationToken)
+
+    public async Task<ApplicationUser?> FindByIdAsync(string userId, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
-        ApplicationUser user = null;
+
+        ApplicationUser? user = null;
 
         using (var connection = new NpgsqlConnection(_connectionString))
         {
-            var command = new NpgsqlCommand("SELECT Id, UserName, PasswordHash, NormalizedUserName FROM AspNetUsers WHERE Id = @userId", connection);
-            command.Parameters.AddWithValue("@userId", userId);
+            await connection.OpenAsync(cancellationToken);
 
-            connection.Open();
+            var command = new NpgsqlCommand(
+                "SELECT Id, UserName, PasswordHash, NormalizedUserName FROM aspnetusers WHERE Id = @userId", connection);
+
+            command.Parameters.Add("@userId", NpgsqlTypes.NpgsqlDbType.Uuid).Value = Guid.Parse(userId);
+
             using (var reader = await command.ExecuteReaderAsync(CommandBehavior.SingleRow, cancellationToken))
             {
                 if (await reader.ReadAsync(cancellationToken))
                 {
                     user = new ApplicationUser
                     {
-                        Id = reader["Id"].ToString(),
-                        UserName = reader["UserName"].ToString(),
-                        PasswordHash = reader["PasswordHash"].ToString(),
-                        NormalizedUserName = reader["NormalizedUserName"].ToString()
+                        Id = reader["Id"]?.ToString(),
+                        UserName = reader["UserName"]?.ToString(),
+                        PasswordHash = reader["PasswordHash"]?.ToString(),
+                        NormalizedUserName = reader["NormalizedUserName"]?.ToString()
                     };
                 }
             }
@@ -114,6 +142,8 @@ public class CustomUserStore : IUserStore<ApplicationUser>, IUserPasswordStore<A
 
         return user;
     }
+
+
 
     public async Task<ApplicationUser> FindByNameAsync(string normalizedUserName, CancellationToken cancellationToken)
     {
@@ -171,6 +201,10 @@ public class CustomUserStore : IUserStore<ApplicationUser>, IUserPasswordStore<A
         return Task.CompletedTask;
     }
 
+    #endregion
+
+    #region IUserPasswordStore Implementation
+
     public Task<string> GetPasswordHashAsync(ApplicationUser user, CancellationToken cancellationToken)
     {
         return Task.FromResult(user.PasswordHash);
@@ -187,6 +221,8 @@ public class CustomUserStore : IUserStore<ApplicationUser>, IUserPasswordStore<A
         return Task.FromResult(!string.IsNullOrEmpty(user.PasswordHash));
     }
 
+    #endregion
+
     #region IUserRoleStore Implementation
 
     public async Task AddToRoleAsync(ApplicationUser user, string roleName, CancellationToken cancellationToken)
@@ -197,15 +233,17 @@ public class CustomUserStore : IUserStore<ApplicationUser>, IUserPasswordStore<A
         {
             var command = new NpgsqlCommand(
                 @"INSERT INTO AspNetUserRoles (UserId, RoleId) 
-                  SELECT @userId, Id FROM AspNetRoles WHERE NormalizedName = @roleName", connection);
+              SELECT @userId, Id FROM AspNetRoles WHERE NormalizedName = @roleName", connection);
 
-            command.Parameters.AddWithValue("@userId", user.Id);
+            // Ensure that user.Id is passed as a Guid (UUID)
+            command.Parameters.Add("@userId", NpgsqlTypes.NpgsqlDbType.Uuid).Value = Guid.Parse(user.Id);
             command.Parameters.AddWithValue("@roleName", roleName.ToUpper());
 
             connection.Open();
             await command.ExecuteNonQueryAsync(cancellationToken);
         }
     }
+
 
     public async Task RemoveFromRoleAsync(ApplicationUser user, string roleName, CancellationToken cancellationToken)
     {
@@ -237,7 +275,7 @@ public class CustomUserStore : IUserStore<ApplicationUser>, IUserPasswordStore<A
                 @"SELECT r.Name 
                   FROM AspNetRoles r
                   INNER JOIN AspNetUserRoles ur ON ur.RoleId = r.Id
-                  WHERE ur.UserId = @userId", connection);
+                  WHERE ur.UserId::TEXT = @userId", connection);
 
             command.Parameters.AddWithValue("@userId", user.Id);
 
@@ -270,7 +308,7 @@ public class CustomUserStore : IUserStore<ApplicationUser>, IUserPasswordStore<A
             command.Parameters.AddWithValue("@roleName", roleName.ToUpper());
 
             connection.Open();
-            var count = (int)await command.ExecuteScalarAsync(cancellationToken);
+            var count = (long)await command.ExecuteScalarAsync(cancellationToken);
             return count > 0;
         }
     }
@@ -311,10 +349,101 @@ public class CustomUserStore : IUserStore<ApplicationUser>, IUserPasswordStore<A
 
     #endregion
 
+    #region Email Store Implementation
 
+    public Task SetEmailAsync(ApplicationUser user, string? email, CancellationToken cancellationToken)
+    {
+        if (user == null)
+            throw new ArgumentNullException(nameof(user));
+
+        user.Email = email;
+        return Task.CompletedTask; // Warning: Make sure you persist this change to your database if needed.
+    }
+
+    public Task<string?> GetEmailAsync(ApplicationUser user, CancellationToken cancellationToken)
+    {
+        if (user == null)
+            throw new ArgumentNullException(nameof(user));
+
+        return Task.FromResult(user.Email);
+    }
+
+    public Task<bool> GetEmailConfirmedAsync(ApplicationUser user, CancellationToken cancellationToken)
+    {
+        if (user == null)
+            throw new ArgumentNullException(nameof(user));
+
+        return Task.FromResult(user.EmailConfirmed);
+    }
+
+    public Task SetEmailConfirmedAsync(ApplicationUser user, bool confirmed, CancellationToken cancellationToken)
+    {
+        if (user == null)
+            throw new ArgumentNullException(nameof(user));
+
+        user.EmailConfirmed = confirmed;
+        return Task.CompletedTask; // Warning: Ensure that the database is updated here.
+    }
+
+    public async Task<ApplicationUser?> FindByEmailAsync(string normalizedEmail, CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrEmpty(normalizedEmail))
+            throw new ArgumentNullException(nameof(normalizedEmail));
+
+        ApplicationUser? user = null;
+
+        // Warning: Replace with your actual query logic
+        using (var connection = new NpgsqlConnection(_connectionString))
+        {
+            await connection.OpenAsync(cancellationToken);
+
+            using (var command = new NpgsqlCommand("SELECT * FROM Users WHERE NormalizedEmail = @NormalizedEmail", connection))
+            {
+                command.Parameters.AddWithValue("NormalizedEmail", normalizedEmail);
+
+                using (var reader = await command.ExecuteReaderAsync(cancellationToken))
+                {
+                    if (await reader.ReadAsync(cancellationToken))
+                    {
+                        user = new ApplicationUser
+                        {
+                            Id = reader["Id"].ToString(),
+                            UserName = reader["UserName"].ToString(),
+                            Email = reader["Email"].ToString(),
+                            NormalizedEmail = reader["NormalizedEmail"].ToString(),
+                            EmailConfirmed = (bool)reader["EmailConfirmed"]
+                        };
+                    }
+                }
+            }
+        }
+
+        return user; // Warning: Ensure error handling/logging if the user is not found.
+    }
+
+    public Task<string?> GetNormalizedEmailAsync(ApplicationUser user, CancellationToken cancellationToken)
+    {
+        if (user == null)
+            throw new ArgumentNullException(nameof(user));
+
+        return Task.FromResult(user.NormalizedEmail);
+    }
+
+    public Task SetNormalizedEmailAsync(ApplicationUser user, string? normalizedEmail, CancellationToken cancellationToken)
+    {
+        if (user == null)
+            throw new ArgumentNullException(nameof(user));
+
+        user.NormalizedEmail = normalizedEmail;
+        return Task.CompletedTask; // Warning: Make sure to persist this change in the database.
+    }
+
+    #endregion
 
     public void Dispose()
     {
         // Clean up resources if necessary
     }
+
+    
 }

@@ -1,7 +1,8 @@
 ﻿@page "/admin"
 @using Microsoft.AspNetCore.Identity
+@using PPTWebApp.Data
 @inject NavigationManager Navigation
-@inject UserManager<IdentityUser> UserManager
+@inject UserManager<ApplicationUser> UserManager
 @inject AuthenticationStateProvider AuthenticationStateProvider
 
 <h1>Admin Panel</h1>
@@ -9,8 +10,6 @@
 @if (isAdmin)
 {
     <p>Welcome to the admin panel. Here, you can manage users, products, and more.</p>
-
-    <!-- Example of admin functionalities -->
     <ul>
         <li><a href="#">Manage Users</a></li>
         <li><a href="#">Manage Products</a></li>

@@ -30,11 +30,11 @@ namespace PPTWebApp.Data
             {
                 connection.Open();
 
-                // SQL script to create Identity and application-specific tables if they don't exist, for testing in production
+                // SQL script to create Identity and application-specific tables if they don't exist, for testing in development
                 string createTablesSql = @"
                     -- Table for roles
                     CREATE TABLE IF NOT EXISTS AspNetRoles (
-                        Id SERIAL PRIMARY KEY,
+                        Id UUID PRIMARY KEY DEFAULT gen_random_uuid(),  -- Use UUID for RoleId
                         Name VARCHAR(256) NOT NULL,
                         NormalizedName VARCHAR(256) NOT NULL,
                         ConcurrencyStamp VARCHAR(256)
@@ -42,7 +42,7 @@ namespace PPTWebApp.Data
 
                     -- Table for users
                     CREATE TABLE IF NOT EXISTS AspNetUsers (
-                        Id SERIAL PRIMARY KEY,
+                        Id UUID PRIMARY KEY DEFAULT gen_random_uuid(),  -- Use UUID for UserId
                         UserName VARCHAR(256) NOT NULL,
                         NormalizedUserName VARCHAR(256) NOT NULL,
                         Email VARCHAR(256),
@@ -61,8 +61,8 @@ namespace PPTWebApp.Data
 
                     -- Table linking users to roles
                     CREATE TABLE IF NOT EXISTS AspNetUserRoles (
-                        UserId INTEGER NOT NULL,
-                        RoleId INTEGER NOT NULL,
+                        UserId UUID NOT NULL,  -- Use UUID for UserId
+                        RoleId UUID NOT NULL,  -- Use UUID for RoleId
                         PRIMARY KEY (UserId, RoleId),
                         CONSTRAINT FK_AspNetUserRoles_AspNetUsers FOREIGN KEY (UserId) REFERENCES AspNetUsers (Id) ON DELETE CASCADE,
                         CONSTRAINT FK_AspNetUserRoles_AspNetRoles FOREIGN KEY (RoleId) REFERENCES AspNetRoles (Id) ON DELETE CASCADE
@@ -71,7 +71,7 @@ namespace PPTWebApp.Data
                     -- Table for user claims
                     CREATE TABLE IF NOT EXISTS AspNetUserClaims (
                         Id SERIAL PRIMARY KEY,
-                        UserId INTEGER NOT NULL,
+                        UserId UUID NOT NULL,  -- Use UUID for UserId
                         ClaimType TEXT,
                         ClaimValue TEXT,
                         CONSTRAINT FK_AspNetUserClaims_AspNetUsers FOREIGN KEY (UserId) REFERENCES AspNetUsers (Id) ON DELETE CASCADE
@@ -82,14 +82,14 @@ namespace PPTWebApp.Data
                         LoginProvider VARCHAR(128) NOT NULL,
                         ProviderKey VARCHAR(128) NOT NULL,
                         ProviderDisplayName TEXT,
-                        UserId INTEGER NOT NULL,
+                        UserId UUID NOT NULL,  -- Use UUID for UserId
                         PRIMARY KEY (LoginProvider, ProviderKey),
                         CONSTRAINT FK_AspNetUserLogins_AspNetUsers FOREIGN KEY (UserId) REFERENCES AspNetUsers (Id) ON DELETE CASCADE
                     );
 
                     -- Table for user tokens (e.g., password reset, 2FA tokens)
                     CREATE TABLE IF NOT EXISTS AspNetUserTokens (
-                        UserId INTEGER NOT NULL,
+                        UserId UUID NOT NULL,  -- Use UUID for UserId
                         LoginProvider VARCHAR(128) NOT NULL,
                         Name VARCHAR(128) NOT NULL,
                         Value TEXT,
@@ -100,7 +100,7 @@ namespace PPTWebApp.Data
                     -- Table for role claims
                     CREATE TABLE IF NOT EXISTS AspNetRoleClaims (
                         Id SERIAL PRIMARY KEY,
-                        RoleId INTEGER NOT NULL,
+                        RoleId UUID NOT NULL,  -- Use UUID for RoleId
                         ClaimType TEXT,
                         ClaimValue TEXT,
                         CONSTRAINT FK_AspNetRoleClaims_AspNetRoles FOREIGN KEY (RoleId) REFERENCES AspNetRoles (Id) ON DELETE CASCADE
@@ -143,28 +143,41 @@ namespace PPTWebApp.Data
         {
             if (!await _roleManager.RoleExistsAsync("Admin"))
             {
-                await _roleManager.CreateAsync(new IdentityRole("Admin"));
+                var adminRole = new IdentityRole("Admin");
+                await _roleManager.CreateAsync(adminRole);
             }
 
             if (!await _roleManager.RoleExistsAsync("User"))
             {
-                await _roleManager.CreateAsync(new IdentityRole("User"));
+                var userRole = new IdentityRole("User");
+                await _roleManager.CreateAsync(userRole);
             }
 
             if (await _userManager.FindByNameAsync("admin") == null)
             {
                 var adminUser = new ApplicationUser
                 {
-                    UserName = "admin",
+                    UserName = "admin@example.com",
                     Email = "admin@example.com",
                     EmailConfirmed = true
                 };
+
+                adminUser.NormalizedUserName = adminUser.UserName.ToUpper();
+                adminUser.NormalizedEmail = adminUser.Email.ToUpper();
 
                 var result = await _userManager.CreateAsync(adminUser, "Admin@123");
 
                 if (result.Succeeded)
                 {
                     await _userManager.AddToRoleAsync(adminUser, "Admin");
+                    Console.WriteLine("Admin user created and assigned to Admin role.");
+                }
+                else
+                {
+                    foreach (var error in result.Errors)
+                    {
+                        Console.WriteLine($"Error creating Admin user: {error.Description}");
+                    }
                 }
             }
 
@@ -172,16 +185,27 @@ namespace PPTWebApp.Data
             {
                 var regularUser = new ApplicationUser
                 {
-                    UserName = "user",
+                    UserName = "user@example.com",
                     Email = "user@example.com",
                     EmailConfirmed = true
                 };
+
+                regularUser.NormalizedUserName = regularUser.UserName.ToUpper();
+                regularUser.NormalizedEmail = regularUser.Email.ToUpper();
 
                 var result = await _userManager.CreateAsync(regularUser, "User@123");
 
                 if (result.Succeeded)
                 {
                     await _userManager.AddToRoleAsync(regularUser, "User");
+                    Console.WriteLine("Regular user created and assigned to User role.");
+                }
+                else
+                {
+                    foreach (var error in result.Errors)
+                    {
+                        Console.WriteLine($"Error creating Regular user: {error.Description}");
+                    }
                 }
             }
         }

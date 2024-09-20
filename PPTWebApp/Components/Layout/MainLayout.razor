@@ -1,6 +1,7 @@
 ﻿@using Microsoft.AspNetCore.Identity
 @using Microsoft.AspNetCore.Components.Authorization
 @using PPTWebApp.Data
+
 @inject UserManager<ApplicationUser> UserManager
 @inject AuthenticationStateProvider AuthenticationStateProvider
 @inject SignInManager<ApplicationUser> SignInManager
@@ -50,11 +51,17 @@
                 {
                     <li class="nav-item dropdown">
                         <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                            @userName
+                            @userName (@email)
                         </a>
                         <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarDropdown">
                             <li><a class="dropdown-item" href="/account/profile">Profile</a></li>
-                            <li><a class="dropdown-item" href="#" @onclick="Logout">Logout</a></li>
+                            <li>
+                                <form method="post" action="/account/logout">
+                                    <input type="hidden" name="returnUrl" value="" />
+                                    <AntiforgeryToken />
+                                    <button type="submit" class="dropdown-item">Logout</button>
+                                </form>
+                            </li>
                         </ul>
                     </li>
                 }
@@ -63,16 +70,18 @@
     </div>
 </header>
 
+
 <main>
     @Body
 </main>
-
 
 
 @code {
     private bool isLoggedIn = false;
     private bool isAdmin = false;
     private string userName = "";
+    private string email = "";
+
 
     protected override async Task OnInitializedAsync()
     {
@@ -80,17 +89,36 @@
         var user = authState.User;
 
         isLoggedIn = user.Identity.IsAuthenticated;
-        
+
+        Console.WriteLine("Button clicked!");
+
         if (isLoggedIn)
         {
-            userName = user.Identity.Name;
-            isAdmin = await UserManager.IsInRoleAsync(await UserManager.GetUserAsync(user), "Admin");
+            var currentUser = await UserManager.GetUserAsync(user);
+            if (currentUser != null)
+            {
+                userName = currentUser.UserName ?? "Unknown User1";
+                email = currentUser.Email ?? "No Email1"; // Set email if available
+                isAdmin = await UserManager.IsInRoleAsync(currentUser, "Admin");
+            }
+            else
+            {
+                userName = "Unknown User2";
+                email = "No Email2"; // Fallback if email is not available
+                isAdmin = false;
+            }
         }
     }
 
     private async Task Logout()
     {
-        await SignInManager.SignOutAsync();
-        NavigationManager.NavigateTo("/");
+        // Run logout asynchronously to ensure UI doesn't try to update prematurely
+        await Task.Run(async () =>
+        {
+            await SignInManager.SignOutAsync();
+        });
+
+        // Redirect after logout
+        NavigationManager.NavigateTo("/", forceLoad: true);
     }
 }
