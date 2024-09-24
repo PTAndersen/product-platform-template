@@ -1,5 +1,40 @@
-﻿<h3>Highlights</h3>
+﻿@page "/products-grid"
+@using PPTWebApp.Data.Models
+@using PPTWebApp.Data.Services
+@inject ProductService ProductService
 
 @code {
+    private List<Product> Products;
+    private int maxProductsToDisplay = 3;
 
+    protected override async Task OnInitializedAsync()
+    {
+        Products = ProductService.GetProductsInRange(0, maxProductsToDisplay).ToList();
+
+        int placeholdersNeeded = maxProductsToDisplay - Products.Count;
+        for (int i = 0; i < placeholdersNeeded; i++)
+        {
+            Products.Add(null);
+        }
+    }
 }
+
+<div class="container">
+    <div class="text-center mb-4">
+        <h1>Lorem Ipsum</h1>
+        <p>
+            Lorem ipsum dolor sit amet, consectetur adipiscing elit.
+            Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.
+            Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.
+        </p>
+    </div>
+
+    <div class="row product-grid justify-content-center">
+        @foreach (var product in Products)
+        {
+            <div class="col-12 col-md-4 col-lg-3 product-item">
+                <ProductPreview Product="@product" />
+            </div>
+        }
+    </div>
+</div>

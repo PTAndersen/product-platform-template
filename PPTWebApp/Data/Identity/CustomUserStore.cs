@@ -357,7 +357,7 @@ public class CustomUserStore : IUserStore<ApplicationUser>, IUserPasswordStore<A
             throw new ArgumentNullException(nameof(user));
 
         user.Email = email;
-        return Task.CompletedTask; // Warning: Make sure you persist this change to your database if needed.
+        return Task.CompletedTask; // TODO: Make sure to persist this change to the database if needed.
     }
 
     public Task<string?> GetEmailAsync(ApplicationUser user, CancellationToken cancellationToken)
@@ -382,7 +382,7 @@ public class CustomUserStore : IUserStore<ApplicationUser>, IUserPasswordStore<A
             throw new ArgumentNullException(nameof(user));
 
         user.EmailConfirmed = confirmed;
-        return Task.CompletedTask; // Warning: Ensure that the database is updated here.
+        return Task.CompletedTask; // TODO: Ensure that the database is updated here.
     }
 
     public async Task<ApplicationUser?> FindByEmailAsync(string normalizedEmail, CancellationToken cancellationToken)
@@ -392,7 +392,6 @@ public class CustomUserStore : IUserStore<ApplicationUser>, IUserPasswordStore<A
 
         ApplicationUser? user = null;
 
-        // Warning: Replace with your actual query logic
         using (var connection = new NpgsqlConnection(_connectionString))
         {
             await connection.OpenAsync(cancellationToken);
@@ -418,7 +417,7 @@ public class CustomUserStore : IUserStore<ApplicationUser>, IUserPasswordStore<A
             }
         }
 
-        return user; // Warning: Ensure error handling/logging if the user is not found.
+        return user; // TODO: Ensure error handling/logging if the user is not found.
     }
 
     public Task<string?> GetNormalizedEmailAsync(ApplicationUser user, CancellationToken cancellationToken)
@@ -435,7 +434,7 @@ public class CustomUserStore : IUserStore<ApplicationUser>, IUserPasswordStore<A
             throw new ArgumentNullException(nameof(user));
 
         user.NormalizedEmail = normalizedEmail;
-        return Task.CompletedTask; // Warning: Make sure to persist this change in the database.
+        return Task.CompletedTask; // TODO: Make sure to persist this change in the database.
     }
 
     #endregion

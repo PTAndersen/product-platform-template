@@ -1,0 +1,108 @@
+﻿@page "/posts/overview"
+@using PPTWebApp.Data.Models
+@using PPTWebApp.Data.Services
+@inject PostService PostService
+
+<div class="overview-posts-container">
+    <h3 class="text-center">All Posts</h3>
+
+    <div class="query-bar-container mb-4">
+        <div class="query-bar">
+            <div class="row gx-3 justify-content-center">
+                <div class="col-md-3 mb-2">
+                    <input type="text" placeholder="Search posts..." class="form-control" />
+                </div>
+
+                <div class="col-md-2 mb-2">
+                    <div class="dropdown">
+                        <button class="btn btn-secondary dropdown-toggle w-100" type="button" id="sortDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                            Sort By
+                        </button>
+                        <ul class="dropdown-menu" aria-labelledby="sortDropdown">
+                            <li><a class="dropdown-item" href="#">Newest First</a></li>
+                            <li><a class="dropdown-item" href="#">Oldest First</a></li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="col-md-3 mb-2">
+                    <select class="form-select">
+                        <option value="all">All Categories</option>
+                        <option value="news">News</option>
+                        <option value="technology">Technology</option>
+                        <option value="lifestyle">Lifestyle</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="container mt-4">
+        <div class="row">
+            @foreach (var post in paginatedPosts)
+            {
+                <div class="col-12 col-md-6 col-lg-3 mb-4">
+                    <div class="post-box p-3 h-100">
+                        <h2>@post.Title</h2>
+                        <p>@post.Content</p>
+                        <small class="text-muted">@post.DatePosted.ToString("MMMM dd, yyyy")</small>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+
+    <div class="pagination">
+        <button class="pagination-btn" @onclick="LoadPreviousPage" disabled="@((pageIndex == 0))">←</button>
+        <input type="number" value="@(pageIndex + 1)" min="1" max="@totalPages" class="page-input" @onchange="OnPageInputChange" />
+        of <span class="total-pages">@totalPages</span>
+        <button class="pagination-btn" @onclick="LoadNextPage" disabled="@((pageIndex == totalPages - 1))">→</button>
+    </div>
+</div>
+
+@code {
+    private List<Post> paginatedPosts = new List<Post>();
+    private int maxPostsToDisplay = 8;
+    private int pageIndex = 0;
+    private int totalPosts = 0;
+    private int totalPages = 1;
+
+    protected override void OnInitialized()
+    {
+        totalPosts = PostService.GetTotalPostCount();
+        totalPages = (int)Math.Ceiling((double)totalPosts / maxPostsToDisplay);
+        LoadPosts();
+    }
+
+    private void LoadPosts()
+    {
+        paginatedPosts = PostService.GetPostsInRange(pageIndex * maxPostsToDisplay, maxPostsToDisplay).ToList();
+    }
+
+    private void LoadNextPage()
+    {
+        if (pageIndex < totalPages - 1)
+        {
+            pageIndex++;
+            LoadPosts();
+        }
+    }
+
+    private void LoadPreviousPage()
+    {
+        if (pageIndex > 0)
+        {
+            pageIndex--;
+            LoadPosts();
+        }
+    }
+
+    private void OnPageInputChange(ChangeEventArgs e)
+    {
+        if (int.TryParse(e.Value?.ToString(), out int inputPage))
+        {
+            pageIndex = Math.Clamp(inputPage - 1, 0, totalPages - 1);
+            LoadPosts();
+        }
+    }
+}

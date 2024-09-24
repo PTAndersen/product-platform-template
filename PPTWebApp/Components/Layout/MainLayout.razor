@@ -22,7 +22,7 @@
                     <NavLink class="nav-link" href="/">Home</NavLink>
                 </li>
                 <li class="nav-item">
-                    <NavLink class="nav-link" href="/products/highlighted">Main Products</NavLink>
+                    <NavLink class="nav-link" href="/highlighted">Main Products</NavLink>
                 </li>
                 <li class="nav-item">
                     <NavLink class="nav-link" href="/products">Other Products</NavLink>
@@ -90,21 +90,19 @@
 
         isLoggedIn = user.Identity.IsAuthenticated;
 
-        Console.WriteLine("Button clicked!");
-
         if (isLoggedIn)
         {
             var currentUser = await UserManager.GetUserAsync(user);
             if (currentUser != null)
             {
-                userName = currentUser.UserName ?? "Unknown User1";
-                email = currentUser.Email ?? "No Email1"; // Set email if available
+                userName = currentUser.UserName ?? "Unknown User";
+                email = currentUser.Email ?? "No Email";
                 isAdmin = await UserManager.IsInRoleAsync(currentUser, "Admin");
             }
             else
             {
-                userName = "Unknown User2";
-                email = "No Email2"; // Fallback if email is not available
+                userName = "Unknown User";
+                email = "Not able to get user";
                 isAdmin = false;
             }
         }
@@ -112,13 +110,11 @@
 
     private async Task Logout()
     {
-        // Run logout asynchronously to ensure UI doesn't try to update prematurely
         await Task.Run(async () =>
         {
             await SignInManager.SignOutAsync();
         });
 
-        // Redirect after logout
         NavigationManager.NavigateTo("/", forceLoad: true);
     }
 }

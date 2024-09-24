@@ -1,0 +1,42 @@
+﻿.register-container {
+    margin-top: 5rem;
+    height: auto;
+    min-height: 80vh;
+}
+
+.register-form, .external-login-container {
+    background-color: #f8f9fa;
+    padding: 2rem;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    margin: 1rem;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    height: 100%;
+}
+
+.register-form h2, .external-login-container h3 {
+    margin-bottom: 1.5rem;
+}
+
+.register-form .form-floating {
+    margin-bottom: 1.5rem;
+}
+
+.register-form button[type="submit"] {
+    margin-top: 1rem;
+}
+
+.register-form a {
+    color: #007bff;
+    text-decoration: none;
+}
+
+    .register-form a:hover {
+        text-decoration: underline;
+    }
+
+.external-login-container hr {
+    margin-bottom: 1rem;
+}

@@ -13,9 +13,19 @@ namespace PPTWebApp.Data.Services
             _postRepository = postRepository;
         }
 
+        public IEnumerable<Post> GetPostsInRange(int startIndex, int range)
+        {
+            return _postRepository.GetPostsInRange(startIndex, range);
+        }
+
         public IEnumerable<Post> GetAllPosts()
         {
             return _postRepository.GetAllPosts();
+        }
+
+        public int GetTotalPostCount()
+        {
+            return _postRepository.GetTotalPostCount();
         }
 
         public Post GetPostById(int id)

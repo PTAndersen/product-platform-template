@@ -31,6 +31,8 @@ builder.Services.AddScoped<IdentityUserAccessor>();
 builder.Services.AddScoped<IdentityRedirectManager>();
 builder.Services.AddScoped<IPostRepository>(provider => new PostRepository(connectionString));
 builder.Services.AddScoped<PostService>();
+builder.Services.AddScoped<IProductRepository>(provider => new ProductRepository(connectionString));
+builder.Services.AddScoped<ProductService>();
 
 builder.Services.AddScoped<AuthenticationStateProvider, IdentityRevalidatingAuthenticationStateProvider>();
 

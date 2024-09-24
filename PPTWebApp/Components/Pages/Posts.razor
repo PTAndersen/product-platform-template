@@ -2,24 +2,13 @@
 @using PPTWebApp.Data.Models
 @using PPTWebApp.Data.Services
 @inject PostService PostService
+@rendermode InteractiveServer
 
-<h3>Posts</h3>
+<div class="posts-page-container">
+    <PPTWebApp.Components.Pages.Sections.PostsShowcased />
 
-@foreach (var post in posts)
-{
-    <div>
-        <h2>@post.Title</h2>
-        <p>@post.Content</p>
-        <small>@post.DatePosted</small>
-    </div>
-}
+    <PPTWebApp.Components.Pages.Sections.PostsOverview />
+</div>
 
 @code {
-    private IEnumerable<Post> posts;
-
-    protected override void OnInitialized()
-    {
-        posts = PostService.GetAllPosts();
-    }
 }
-

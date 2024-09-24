@@ -1,0 +1,40 @@
+﻿@page "/posts/showcased"
+@using PPTWebApp.Data.Models
+@using PPTWebApp.Data.Services
+@inject PostService PostService
+
+<div class="posts-container d-flex flex-column align-items-center justify-content-center">
+    <h3 class="text-center">Latest Posts</h3>
+
+    <div class="container">
+        <div class="row justify-content-center h-100">
+            @foreach (var post in posts.Take(3))
+            {
+                <div class="col-12 col-md-4 mb-4">
+                    <div class="post-box p-3 h-100">
+                        <h2>@post.Title</h2>
+                        <p>@post.Content</p>
+                        <small class="text-muted">@post.DatePosted.ToString("MMMM dd, yyyy")</small>
+                    </div>
+                </div>
+            }
+            @for (var i = posts.Count(); i < 3; i++)
+            {
+                <div class="col-12 col-md-4 mb-4">
+                    <div class="post-box p-3 h-100 empty-post">
+                        <p class="text-muted text-center">No post available</p>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+@code {
+    private IEnumerable<Post> posts;
+
+    protected override async Task OnInitializedAsync()
+    {
+        posts = PostService.GetPostsInRange(0, 3);
+    }
+}

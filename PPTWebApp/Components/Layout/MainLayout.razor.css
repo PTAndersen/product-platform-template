@@ -10,7 +10,7 @@ main {
 
 .dropdown-menu {
     background-color: #ffffff;
-    min-width: 200px; /* Ensure the dropdown is wide enough */
+    min-width: 200px;
     border: 1px solid #ccc;
 }
 

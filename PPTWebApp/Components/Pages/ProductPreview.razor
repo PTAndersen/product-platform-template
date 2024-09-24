@@ -1,0 +1,31 @@
+﻿@using PPTWebApp.Data.Models
+@code {
+    [Parameter] public Product Product { get; set; }
+
+    private string ImageClass => GetImageClass(Product?.ImageCompromise);
+
+    private string GetImageClass(string imageCompromise)
+    {
+        return imageCompromise == "horizontal" ? "image-horizontal" : "image-vertical";
+    }
+}
+
+@if (Product != null)
+{
+    <div class="product-preview">
+        <img src="@Product.ImageUrl" alt="@Product.Name" class="@ImageClass" />
+        <div class="product-info">
+            <h4>@Product.Name</h4>
+            <p>@Product.Description</p>
+            <p class="product-price">$@Product.Price</p>
+        </div>
+    </div>
+}
+else
+{
+    <div class="product-preview">
+        <div class="product-info">
+            <h4>No Product Available</h4>
+        </div>
+    </div>
+}

@@ -1,0 +1,76 @@
+﻿
+.query-bar .row {
+    align-items: center;
+}
+
+.query-bar {
+    background-color: #f8f8f8;
+    border-radius: 8px;
+    padding: 1rem;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    margin-bottom: 2rem;
+}
+
+.product-grid-container {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    max-height: 95vh;
+    width: 100%;
+    margin: 0 auto;
+    padding: 2rem;
+    overflow-y: auto;
+    overflow-x: hidden;
+}
+
+.row {
+    display: flex;
+    flex-wrap: wrap;
+    margin-left: 0;
+}
+
+.col-12, .col-md-6, .col-lg-3 {
+    display: flex;
+    flex-direction: column;
+    padding-left: 0;
+}
+
+.product-box {
+    text-align: center;
+    font-size: 1.2rem;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    flex-grow: 1;
+}
+
+.pagination {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 1rem 0;
+}
+
+.pagination-btn {
+    background-color: #212529;
+    color: #fff;
+    border: none;
+    padding: 0.5rem 1rem;
+    margin: 0 1rem;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.page-input {
+    width: 3rem;
+    text-align: center;
+    padding: 0.5rem;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    margin: 0 0.5rem;
+}
+
+.total-pages {
+    font-size: 1.1rem;
+}

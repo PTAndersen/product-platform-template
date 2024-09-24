@@ -20,115 +20,109 @@ namespace PPTWebApp.Data
 
         public async Task InitializeDataAsync()
         {
-            CreateTablesAndInsertDummyData();
+            CreateTables();
             await CreateUsersAndRoles();
+            InsertDummyData(9);
         }
 
-        private void CreateTablesAndInsertDummyData()
+        private void CreateTables()
         {
             using (var connection = new NpgsqlConnection(_connectionString))
             {
                 connection.Open();
 
-                // SQL script to create Identity and application-specific tables if they don't exist, for testing in development
                 string createTablesSql = @"
-                    -- Table for roles
-                    CREATE TABLE IF NOT EXISTS AspNetRoles (
-                        Id UUID PRIMARY KEY DEFAULT gen_random_uuid(),  -- Use UUID for RoleId
-                        Name VARCHAR(256) NOT NULL,
-                        NormalizedName VARCHAR(256) NOT NULL,
-                        ConcurrencyStamp VARCHAR(256)
-                    );
+            -- Table for roles
+            CREATE TABLE IF NOT EXISTS aspnetroles (
+                id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                name VARCHAR(256) NOT NULL,
+                normalizedname VARCHAR(256) NOT NULL,
+                concurrencystamp VARCHAR(256)
+            );
 
-                    -- Table for users
-                    CREATE TABLE IF NOT EXISTS AspNetUsers (
-                        Id UUID PRIMARY KEY DEFAULT gen_random_uuid(),  -- Use UUID for UserId
-                        UserName VARCHAR(256) NOT NULL,
-                        NormalizedUserName VARCHAR(256) NOT NULL,
-                        Email VARCHAR(256),
-                        NormalizedEmail VARCHAR(256),
-                        EmailConfirmed BOOLEAN NOT NULL,
-                        PasswordHash TEXT,
-                        SecurityStamp TEXT,
-                        ConcurrencyStamp TEXT,
-                        PhoneNumber TEXT,
-                        PhoneNumberConfirmed BOOLEAN NOT NULL,
-                        TwoFactorEnabled BOOLEAN NOT NULL,
-                        LockoutEnd TIMESTAMP,
-                        LockoutEnabled BOOLEAN NOT NULL,
-                        AccessFailedCount INTEGER NOT NULL
-                    );
+            -- Table for users
+            CREATE TABLE IF NOT EXISTS aspnetusers (
+                id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                username VARCHAR(256) NOT NULL,
+                normalizedusername VARCHAR(256) NOT NULL,
+                email VARCHAR(256),
+                normalizedemail VARCHAR(256),
+                emailconfirmed BOOLEAN NOT NULL,
+                passwordhash TEXT,
+                securitystamp TEXT,
+                concurrencystamp TEXT,
+                phonenumber TEXT,
+                phonenumberconfirmed BOOLEAN NOT NULL,
+                twofactorenabled BOOLEAN NOT NULL,
+                lockoutend TIMESTAMP,
+                lockoutenabled BOOLEAN NOT NULL,
+                accessfailedcount INTEGER NOT NULL
+            );
 
-                    -- Table linking users to roles
-                    CREATE TABLE IF NOT EXISTS AspNetUserRoles (
-                        UserId UUID NOT NULL,  -- Use UUID for UserId
-                        RoleId UUID NOT NULL,  -- Use UUID for RoleId
-                        PRIMARY KEY (UserId, RoleId),
-                        CONSTRAINT FK_AspNetUserRoles_AspNetUsers FOREIGN KEY (UserId) REFERENCES AspNetUsers (Id) ON DELETE CASCADE,
-                        CONSTRAINT FK_AspNetUserRoles_AspNetRoles FOREIGN KEY (RoleId) REFERENCES AspNetRoles (Id) ON DELETE CASCADE
-                    );
+            -- Table linking users to roles
+            CREATE TABLE IF NOT EXISTS aspnetuserroles (
+                userid UUID NOT NULL,
+                roleid UUID NOT NULL,
+                PRIMARY KEY (userid, roleid),
+                CONSTRAINT fk_aspnetuserroles_aspnetusers FOREIGN KEY (userid) REFERENCES aspnetusers (id) ON DELETE CASCADE,
+                CONSTRAINT fk_aspnetuserroles_aspnetroles FOREIGN KEY (roleid) REFERENCES aspnetroles (id) ON DELETE CASCADE
+            );
 
-                    -- Table for user claims
-                    CREATE TABLE IF NOT EXISTS AspNetUserClaims (
-                        Id SERIAL PRIMARY KEY,
-                        UserId UUID NOT NULL,  -- Use UUID for UserId
-                        ClaimType TEXT,
-                        ClaimValue TEXT,
-                        CONSTRAINT FK_AspNetUserClaims_AspNetUsers FOREIGN KEY (UserId) REFERENCES AspNetUsers (Id) ON DELETE CASCADE
-                    );
+            -- Table for user claims
+            CREATE TABLE IF NOT EXISTS aspnetuserclaims (
+                id SERIAL PRIMARY KEY,
+                userid UUID NOT NULL,
+                claimtype TEXT,
+                claimvalue TEXT,
+                CONSTRAINT fk_aspnetuserclaims_aspnetusers FOREIGN KEY (userid) REFERENCES aspnetusers (id) ON DELETE CASCADE
+            );
 
-                    -- Table for user logins
-                    CREATE TABLE IF NOT EXISTS AspNetUserLogins (
-                        LoginProvider VARCHAR(128) NOT NULL,
-                        ProviderKey VARCHAR(128) NOT NULL,
-                        ProviderDisplayName TEXT,
-                        UserId UUID NOT NULL,  -- Use UUID for UserId
-                        PRIMARY KEY (LoginProvider, ProviderKey),
-                        CONSTRAINT FK_AspNetUserLogins_AspNetUsers FOREIGN KEY (UserId) REFERENCES AspNetUsers (Id) ON DELETE CASCADE
-                    );
+            -- Table for user logins
+            CREATE TABLE IF NOT EXISTS aspnetuserlogins (
+                loginprovider VARCHAR(128) NOT NULL,
+                providerkey VARCHAR(128) NOT NULL,
+                providerdisplayname TEXT,
+                userid UUID NOT NULL,
+                PRIMARY KEY (loginprovider, providerkey),
+                CONSTRAINT fk_aspnetuserlogins_aspnetusers FOREIGN KEY (userid) REFERENCES aspnetusers (id) ON DELETE CASCADE
+            );
 
-                    -- Table for user tokens (e.g., password reset, 2FA tokens)
-                    CREATE TABLE IF NOT EXISTS AspNetUserTokens (
-                        UserId UUID NOT NULL,  -- Use UUID for UserId
-                        LoginProvider VARCHAR(128) NOT NULL,
-                        Name VARCHAR(128) NOT NULL,
-                        Value TEXT,
-                        PRIMARY KEY (UserId, LoginProvider, Name),
-                        CONSTRAINT FK_AspNetUserTokens_AspNetUsers FOREIGN KEY (UserId) REFERENCES AspNetUsers (Id) ON DELETE CASCADE
-                    );
+            -- Table for user tokens
+            CREATE TABLE IF NOT EXISTS aspnetusertokens (
+                userid UUID NOT NULL,
+                loginprovider VARCHAR(128) NOT NULL,
+                name VARCHAR(128) NOT NULL,
+                value TEXT,
+                PRIMARY KEY (userid, loginprovider, name),
+                CONSTRAINT fk_aspnetusertokens_aspnetusers FOREIGN KEY (userid) REFERENCES aspnetusers (id) ON DELETE CASCADE
+            );
 
-                    -- Table for role claims
-                    CREATE TABLE IF NOT EXISTS AspNetRoleClaims (
-                        Id SERIAL PRIMARY KEY,
-                        RoleId UUID NOT NULL,  -- Use UUID for RoleId
-                        ClaimType TEXT,
-                        ClaimValue TEXT,
-                        CONSTRAINT FK_AspNetRoleClaims_AspNetRoles FOREIGN KEY (RoleId) REFERENCES AspNetRoles (Id) ON DELETE CASCADE
-                    );
+            -- Table for role claims
+            CREATE TABLE IF NOT EXISTS aspnetroleclaims (
+                id SERIAL PRIMARY KEY,
+                roleid UUID NOT NULL,
+                claimtype TEXT,
+                claimvalue TEXT,
+                CONSTRAINT fk_aspnetroleclaims_aspnetroles FOREIGN KEY (roleid) REFERENCES aspnetroles (id) ON DELETE CASCADE
+            );
 
-                    -- Create your application's custom tables (Posts and Products)
-                    CREATE TABLE IF NOT EXISTS Posts (
-                        Id SERIAL PRIMARY KEY,
-                        Title VARCHAR(255) NOT NULL,
-                        Content TEXT NOT NULL,
-                        DatePosted TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
-                    );
+            -- Custom table for Posts
+            CREATE TABLE IF NOT EXISTS posts (
+                id SERIAL PRIMARY KEY,
+                title VARCHAR(255) NOT NULL,
+                content TEXT NOT NULL,
+                dateposted TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+            );
 
-                    CREATE TABLE IF NOT EXISTS Products (
-                        Id SERIAL PRIMARY KEY,
-                        Name VARCHAR(255) NOT NULL,
-                        Description TEXT,
-                        Price DECIMAL(10, 2) NOT NULL
-                    );
-
-                    -- Insert dummy data into Posts and Products
-                    INSERT INTO Posts (Title, Content) 
-                    SELECT 'First Post', 'This is the first post.' 
-                    WHERE NOT EXISTS (SELECT 1 FROM Posts);
-
-                    INSERT INTO Products (Name, Description, Price) 
-                    SELECT 'Sample Product', 'This is a sample product.', 9.99 
-                    WHERE NOT EXISTS (SELECT 1 FROM Products);";
+            -- Custom table for Products
+            CREATE TABLE IF NOT EXISTS products (
+                id SERIAL PRIMARY KEY,
+                name VARCHAR(255) NOT NULL,
+                description TEXT,
+                price DECIMAL(10, 2) NOT NULL,
+                imageurl VARCHAR(255) NOT NULL,
+                imagecompromise VARCHAR(50) NOT NULL -- Whether the image should adjust horizontally or vertically
+            );";
 
                 using (var createCommand = new NpgsqlCommand(createTablesSql, connection))
                 {
@@ -138,6 +132,48 @@ namespace PPTWebApp.Data
                 connection.Close();
             }
         }
+
+        private void InsertDummyData(int count)
+        {
+            using (var connection = new NpgsqlConnection(_connectionString))
+            {
+                connection.Open();
+
+                for (int i = 1; i <= count; i++)
+                {
+                    string insertPostSql = @"
+                        INSERT INTO posts (title, content)
+                        SELECT @Title, @Content
+                        WHERE NOT EXISTS (SELECT 1 FROM posts WHERE title = @Title)";
+
+                    using (var insertPostCommand = new NpgsqlCommand(insertPostSql, connection))
+                    {
+                        insertPostCommand.Parameters.AddWithValue("@Title", $"Post {i}");
+                        insertPostCommand.Parameters.AddWithValue("@Content", $"This is the content of post {i}.");
+                        insertPostCommand.ExecuteNonQuery();
+                    }
+
+                    string insertProductSql = @"
+                        INSERT INTO products (name, description, price, imageurl, imagecompromise)
+                        SELECT @Name, @Description, @Price, @ImageUrl, @ImageCompromise
+                        WHERE NOT EXISTS (SELECT 1 FROM products WHERE name = @Name)";
+
+                    using (var insertProductCommand = new NpgsqlCommand(insertProductSql, connection))
+                    {
+                        insertProductCommand.Parameters.AddWithValue("@Name", $"Product {i}");
+                        insertProductCommand.Parameters.AddWithValue("@Description", $"This is the description of product {i}.");
+                        insertProductCommand.Parameters.AddWithValue("@Price", 9.99m + i);
+                        insertProductCommand.Parameters.AddWithValue("@ImageUrl", $"https://via.placeholder.com/400?text=Product+{i}");
+                        insertProductCommand.Parameters.AddWithValue("@ImageCompromise", "horizontal");
+                        insertProductCommand.ExecuteNonQuery();
+                    }
+                }
+
+                connection.Close();
+            }
+        }
+
+
 
         private async Task CreateUsersAndRoles()
         {

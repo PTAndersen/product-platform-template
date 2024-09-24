@@ -37,6 +37,63 @@ namespace PPTWebApp.Data.Repositories
             return posts;
         }
 
+        public IEnumerable<Post> GetPostsInRange(int startIndex, int range)
+        {
+            var posts = new List<Post>();
+
+            using (var connection = new NpgsqlConnection(_connectionString))
+            {
+                connection.Open();
+
+                string query = @"
+                    SELECT id, title, content, dateposted
+                    FROM posts
+                    ORDER BY id
+                    OFFSET @StartIndex LIMIT @Range";
+
+                using (var command = new NpgsqlCommand(query, connection))
+                {
+                    command.Parameters.AddWithValue("@StartIndex", startIndex);
+                    command.Parameters.AddWithValue("@Range", range);
+
+                    using (var reader = command.ExecuteReader())
+                    {
+                        while (reader.Read())
+                        {
+                            posts.Add(new Post
+                            {
+                                Id = reader.GetInt32(0),
+                                Title = reader.GetString(1),
+                                Content = reader.GetString(2),
+                                DatePosted = reader.GetDateTime(3)
+                            });
+                        }
+                    }
+                }
+            }
+
+            return posts;
+        }
+
+        public int GetTotalPostCount()
+        {
+            int totalCount = 0;
+
+            using (var connection = new NpgsqlConnection(_connectionString))
+            {
+                connection.Open();
+
+                string query = "SELECT COUNT(*) FROM posts";
+
+                using (var command = new NpgsqlCommand(query, connection))
+                {
+                    totalCount = Convert.ToInt32(command.ExecuteScalar());
+                }
+            }
+
+            return totalCount;
+        }
+
         public Post GetPostById(int id)
         {
             Post post = null;
