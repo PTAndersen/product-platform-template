@@ -1,0 +1,47 @@
+﻿.table-overview-scroll-container {
+    height: calc(100vh - 60px); /* TODO: fix the hardcoded header space */
+    overflow-y: auto;
+    padding: 1.5rem;
+    margin: 0;
+    box-sizing: border-box;
+}
+
+.admin-table-overview-container {
+    padding: 20px;
+}
+
+.form-group label {
+    font-weight: bold;
+    margin-bottom: 5px;
+}
+
+.form-control {
+    max-width: 300px;
+    margin-bottom: 20px;
+}
+
+.table-responsive {
+    margin-top: 20px;
+}
+
+.btn-inspect {
+    padding: 5px 15px;
+    font-size: 14px;
+}
+
+.pagination {
+    margin-top: 20px;
+}
+
+.page-item.active .page-link {
+    background-color: #007bff;
+    border-color: #007bff;
+}
+
+.page-link {
+    color: #007bff;
+}
+
+    .page-link:hover {
+        color: #0056b3;
+    }

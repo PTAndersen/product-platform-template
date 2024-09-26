@@ -1,4 +1,9 @@
 ﻿@using PPTWebApp.Data.Models
+@using PPTWebApp.Data.Services
+@inject BasketService BasketService
+@inject NavigationManager NavigationManager
+@rendermode InteractiveServer
+
 @code {
     [Parameter] public Product Product { get; set; }
 
@@ -7,6 +12,23 @@
     private string GetImageClass(string imageCompromise)
     {
         return imageCompromise == "horizontal" ? "image-horizontal" : "image-vertical";
+    }
+
+    private void AddProductToBasket()
+    {
+        Console.Write("Add to basket");
+        if (Product != null)
+        {
+            BasketService.AddToBasket(Product, 1);
+        }
+    }
+
+    private void ViewProduct()
+    {
+        if (Product != null)
+        {
+            NavigationManager.NavigateTo($"/products/{Product.Id}");
+        }
     }
 }
 
@@ -18,6 +40,11 @@
             <h4>@Product.Name</h4>
             <p>@Product.Description</p>
             <p class="product-price">$@Product.Price</p>
+
+            <div class="product-actions">
+                <button class="btn btn-primary" @onclick="AddProductToBasket">Add to Cart</button>
+                <button class="btn btn-secondary" @onclick="ViewProduct">View</button>
+            </div>
         </div>
     </div>
 }

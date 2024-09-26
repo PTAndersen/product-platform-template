@@ -1,0 +1,111 @@
+﻿@page "/admin/posts-overview"
+@using Microsoft.AspNetCore.Identity
+@using PPTWebApp.Components.Layout
+@using PPTWebApp.Data
+@inject NavigationManager Navigation
+@inject UserManager<ApplicationUser> UserManager
+@inject AuthenticationStateProvider AuthenticationStateProvider
+@rendermode InteractiveServer
+
+<div class="posts-overview-scroll-container">
+    <h1>Posts Overview</h1>
+
+    @if (isAdmin)
+    {
+        <div class="admin-post-overview-container">
+            <h1>Create New Post</h1>
+
+            <EditForm Model="@postModel" OnValidSubmit="HandleValidSubmit">
+                <div class="form-group">
+                    <label for="postTitle">Post Title</label>
+                    <input id="postTitle" class="form-control" @bind="postModel.Title" placeholder="Enter post title" />
+                </div>
+
+                <div class="form-group">
+                    <label for="postAuthor">Author's Name</label>
+                    <input id="postAuthor" class="form-control" @bind="postModel.Author" placeholder="Enter author's name" />
+                </div>
+
+                <div class="form-group">
+                    <label for="postDate">Date</label>
+                    <input id="postDate" class="form-control" type="text" @bind="postModel.Date" readonly />
+                </div>
+
+                <div class="form-group">
+                    <label for="postFile">Upload HTML File</label>
+                    <InputFile OnChange="HandleFileSelected" class="form-control" />
+                </div>
+
+                <button type="submit" class="btn btn-primary">Submit Post</button>
+            </EditForm>
+        </div>
+    }
+    else
+    {
+        <p>You do not have access to this page.</p>
+    }
+</div>
+
+@code {
+    private bool isAdmin = false;
+
+    private PostModel postModel = new PostModel();
+    private string htmlFileContent;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+
+        if (user.Identity != null && user.Identity.IsAuthenticated)
+        {
+            var currentUser = await UserManager.GetUserAsync(user);
+            if (await UserManager.IsInRoleAsync(currentUser, "Admin"))
+            {
+                isAdmin = true;
+            }
+        }
+
+        if (!isAdmin)
+        {
+            Navigation.NavigateTo("/");
+        }
+    }
+
+    private async Task HandleFileSelected(InputFileChangeEventArgs e)
+    {
+        var file = e.File;
+
+        if (file != null && file.ContentType == "text/html")
+        {
+            using var stream = new StreamReader(file.OpenReadStream());
+            htmlFileContent = await stream.ReadToEndAsync();
+        }
+        else
+        {
+            htmlFileContent = null;
+        }
+    }
+
+    private void HandleValidSubmit()
+    {
+        Console.WriteLine($"Post Title: {postModel.Title}");
+        Console.WriteLine($"Author: {postModel.Author}");
+        Console.WriteLine($"Date: {postModel.Date}");
+        Console.WriteLine($"HTML Content Length: {htmlFileContent?.Length}");
+
+        // TODO: Add logic here to save the post data (title, author, date, HTML content)
+    }
+
+    protected override void OnInitialized()
+    {
+        postModel.Date = DateTime.Now.ToString("yyyy-MM-dd");
+    }
+
+    private class PostModel
+    {
+        public string Title { get; set; }
+        public string Author { get; set; }
+        public string Date { get; set; }
+    }
+}

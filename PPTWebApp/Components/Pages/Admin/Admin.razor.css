@@ -1,0 +1,32 @@
+﻿.admin-layout {
+    display: flex;
+    justify-content: flex-start;
+    align-items: flex-start;
+    width: 100%;
+    height: 100vh;
+    overflow: hidden;
+}
+
+.row.no-gutters {
+    margin-right: 0;
+    margin-left: 0;
+}
+
+.col-md-4 {
+    flex-basis: 250px;
+    max-width: 250px;
+    height: 100vh;
+    background-color: #343a40;
+    padding: 0;
+    overflow-y: auto;
+}
+
+.col-md-8 {
+    flex-grow: 1;
+    padding: 0rem;
+    background-color: #ffffff;
+    height: 100vh;
+    overflow-y: auto;
+    z-index: 1;
+    position: relative;
+}

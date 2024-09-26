@@ -33,6 +33,8 @@ builder.Services.AddScoped<IPostRepository>(provider => new PostRepository(conne
 builder.Services.AddScoped<PostService>();
 builder.Services.AddScoped<IProductRepository>(provider => new ProductRepository(connectionString));
 builder.Services.AddScoped<ProductService>();
+builder.Services.AddScoped<BasketService>();
+
 
 builder.Services.AddScoped<AuthenticationStateProvider, IdentityRevalidatingAuthenticationStateProvider>();
 

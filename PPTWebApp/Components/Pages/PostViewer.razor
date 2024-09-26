@@ -1,0 +1,51 @@
+﻿@page "/post/{url}"
+@inject HttpClient Http
+@using System.Net.Http
+@using System.Net.Http.Json
+
+<div class="post-viewer-container">
+    @if (isLoading)
+    {
+        <p>Loading post...</p>
+    }
+    else if (!string.IsNullOrEmpty(postContent))
+    {
+        <div class="post-content" @onclick="HandleClick">
+            @((MarkupString)postContent)
+        </div>
+    }
+    else
+    {
+        <p>Unable to load post.</p>
+    }
+</div>
+
+@code {
+    [Parameter]
+    public string Url { get; set; }
+
+    private string postContent;
+    private bool isLoading = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            var response = await Http.GetStringAsync(Url);
+            postContent = response;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error loading post: {ex.Message}");
+            postContent = null;
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private void HandleClick()
+    {
+    }
+}

@@ -1,0 +1,293 @@
+﻿@using Microsoft.AspNetCore.Identity
+@using PPTWebApp.Components.Layout
+@using PPTWebApp.Data
+@inject NavigationManager Navigation
+@inject UserManager<ApplicationUser> UserManager
+@inject AuthenticationStateProvider AuthenticationStateProvider
+@inject IJSRuntime JS
+@rendermode InteractiveServer
+
+<div class="dashboard-scroll-container">
+    <h1>Admin Panel</h1>
+
+    @if (isAdmin)
+    {
+        <div class="container-fluid">
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="card">
+                        <div class="card-body">
+                            <h5 class="card-title">Daily Visitors</h5>
+                            <canvas id="dailyVisitorsChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-6">
+                    <div class="card">
+                        <div class="card-body">
+                            <h5 class="card-title">Sales Overview</h5>
+                            <canvas id="salesOverviewChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-6">
+                    <div class="card">
+                        <div class="card-body">
+                            <h5 class="card-title">Conversion Rate</h5>
+                            <canvas id="conversionRateChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-6">
+                    <div class="card">
+                        <div class="card-body">
+                            <h5 class="card-title">User Registrations</h5>
+                            <canvas id="userRegistrationsChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-6">
+                    <div class="card">
+                        <div class="card-body">
+                            <h5 class="card-title">Top Selling Products</h5>
+                            <canvas id="topSellingProductsChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-6">
+                    <div class="card">
+                        <div class="card-body">
+                            <h5 class="card-title">Active Users</h5>
+                            <canvas id="activeUsersChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-6">
+                    <div class="card">
+                        <div class="card-body">
+                            <h5 class="card-title">Revenue Breakdown</h5>
+                            <canvas id="revenueBreakdownChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-6">
+                    <div class="card">
+                        <div class="card-body">
+                            <h5 class="card-title">Sales by Region</h5>
+                            <canvas id="salesByRegionChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+    else
+    {
+        <p>You do not have access to this page.</p>
+    }
+</div>
+
+@code {
+    private bool isAdmin = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+
+        if (user.Identity != null && user.Identity.IsAuthenticated)
+        {
+            var currentUser = await UserManager.GetUserAsync(user);
+            if (await UserManager.IsInRoleAsync(currentUser, "Admin"))
+            {
+                isAdmin = true;
+            }
+        }
+
+        if (!isAdmin)
+        {
+            Navigation.NavigateTo("/");
+        }
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender && isAdmin)
+        {
+            await InitializeCharts();
+        }
+    }
+
+    private async Task InitializeCharts()
+    {
+        // Daily Visitors Chart
+        var dailyVisitorsData = new
+        {
+            labels = new[] { "Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun" },
+            datasets = new[]
+            {
+            new {
+                label = "Visitors",
+                backgroundColor = "rgba(75, 192, 192, 0.2)",
+                borderColor = "rgba(75, 192, 192, 1)",
+                borderWidth = 1,
+                data = new[] { 120, 150, 180, 200, 250, 300, 220 }
+            }
+        }
+        };
+        await JS.InvokeVoidAsync("createChart", "dailyVisitorsChart", "bar", dailyVisitorsData, GetDefaultOptions());
+
+        // Sales Overview (Daily, Weekly, Monthly)
+        var salesOverviewData = new
+        {
+            labels = new[] { "Week 1", "Week 2", "Week 3", "Week 4" },
+            datasets = new[]
+            {
+            new {
+                label = "Daily Sales",
+                backgroundColor = "rgba(255, 99, 132, 0.2)",
+                borderColor = "rgba(255, 99, 132, 1)",
+                data = new[] { 500, 600, 800, 700 }
+            },
+            new {
+                label = "Weekly Sales",
+                backgroundColor = "rgba(54, 162, 235, 0.2)",
+                borderColor = "rgba(54, 162, 235, 1)",
+                data = new[] { 1500, 1700, 2000, 1800 }
+            },
+            new {
+                label = "Monthly Sales",
+                backgroundColor = "rgba(255, 206, 86, 0.2)",
+                borderColor = "rgba(255, 206, 86, 1)",
+                data = new[] { 6000, 7000, 7500, 7200 }
+            }
+        }
+        };
+        await JS.InvokeVoidAsync("createChart", "salesOverviewChart", "line", salesOverviewData, GetDefaultOptions());
+
+        // Conversion Rate Chart
+        var conversionRateData = new
+        {
+            labels = new[] { "Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun" },
+            datasets = new[]
+            {
+            new {
+                label = "Conversion Rate (%)",
+                backgroundColor = "rgba(153, 102, 255, 0.2)",
+                borderColor = "rgba(153, 102, 255, 1)",
+                borderWidth = 1,
+                data = new[] { 1.5, 2.0, 1.8, 2.2, 1.9, 2.5, 2.3 }
+            }
+        }
+        };
+        await JS.InvokeVoidAsync("createChart", "conversionRateChart", "bar", conversionRateData, GetDefaultOptions());
+
+        // User Registrations Chart
+        var userRegistrationsData = new
+        {
+            labels = new[] { "Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun" },
+            datasets = new[]
+            {
+            new {
+                label = "User Registrations",
+                backgroundColor = "rgba(255, 159, 64, 0.2)",
+                borderColor = "rgba(255, 159, 64, 1)",
+                borderWidth = 1,
+                data = new[] { 30, 50, 40, 70, 60, 90, 100 }
+            }
+        }
+        };
+        await JS.InvokeVoidAsync("createChart", "userRegistrationsChart", "bar", userRegistrationsData, GetDefaultOptions());
+
+        // Top Selling Products Chart
+        var topSellingProductsData = new
+        {
+            labels = new[] { "Product A", "Product B", "Product C", "Product D", "Product E" },
+            datasets = new[]
+            {
+            new {
+                label = "Units Sold",
+                backgroundColor = "rgba(75, 192, 192, 0.2)",
+                borderColor = "rgba(75, 192, 192, 1)",
+                borderWidth = 1,
+                data = new[] { 100, 200, 150, 300, 250 }
+            }
+        }
+        };
+        await JS.InvokeVoidAsync("createChart", "topSellingProductsChart", "bar", topSellingProductsData, GetDefaultOptions());
+
+        // Active Users Chart
+        var activeUsersData = new
+        {
+            labels = new[] { "Hour 1", "Hour 2", "Hour 3", "Hour 4", "Hour 5", "Hour 6", "Hour 7" },
+            datasets = new[]
+            {
+                new {
+                    label = "Active Users",
+                    backgroundColor = "rgba(54, 162, 235, 0.2)",
+                    borderColor = "rgba(54, 162, 235, 1)",
+                    borderWidth = 1,
+                    data = new[] { 10, 20, 15, 25, 30, 28, 35 }
+                }
+            }
+        };
+        await JS.InvokeVoidAsync("createChart", "activeUsersChart", "line", activeUsersData, GetDefaultOptions());
+
+
+        // Revenue Breakdown Chart
+        var revenueBreakdownData = new
+        {
+            labels = new[] { "Online Sales", "Retail Sales", "Wholesale" },
+            datasets = new[]
+            {
+            new {
+                label = "Revenue",
+                backgroundColor = new[] { "rgba(255, 99, 132, 0.2)", "rgba(54, 162, 235, 0.2)", "rgba(75, 192, 192, 0.2)" },
+                borderColor = new[] { "rgba(255, 99, 132, 1)", "rgba(54, 162, 235, 1)", "rgba(75, 192, 192, 1)" },
+                borderWidth = 1,
+                data = new[] { 10000, 15000, 8000 }
+            }
+        }
+        };
+        await JS.InvokeVoidAsync("createChart", "revenueBreakdownChart", "pie", revenueBreakdownData, GetDefaultOptions());
+
+        // Sales by Region Chart
+        var salesByRegionData = new
+        {
+            labels = new[] { "North America", "Europe", "Asia", "Australia" },
+            datasets = new[]
+            {
+            new {
+                label = "Sales by Region",
+                backgroundColor = new[] { "rgba(255, 206, 86, 0.2)", "rgba(75, 192, 192, 0.2)", "rgba(54, 162, 235, 0.2)", "rgba(153, 102, 255, 0.2)" },
+                borderColor = new[] { "rgba(255, 206, 86, 1)", "rgba(75, 192, 192, 1)", "rgba(54, 162, 235, 1)", "rgba(153, 102, 255, 1)" },
+                borderWidth = 1,
+                data = new[] { 4000, 5000, 3000, 2000 }
+            }
+        }
+        };
+        await JS.InvokeVoidAsync("createChart", "salesByRegionChart", "doughnut", salesByRegionData, GetDefaultOptions());
+    }
+
+    private object GetDefaultOptions() => new
+    {
+        scales = new
+        {
+            yAxes = new[] {
+            new {
+                ticks = new {
+                    beginAtZero = true
+                }
+            }
+        }
+        }
+    };
+
+}

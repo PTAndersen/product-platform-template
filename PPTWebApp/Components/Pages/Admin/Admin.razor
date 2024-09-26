@@ -1,0 +1,32 @@
+﻿@page "/admin"
+@using Microsoft.AspNetCore.Identity
+@using PPTWebApp.Components.Pages.Admin
+@using PPTWebApp.Data
+@inject NavigationManager Navigation
+@inject UserManager<ApplicationUser> UserManager
+@inject AuthenticationStateProvider AuthenticationStateProvider
+@rendermode InteractiveServer
+
+<div class="admin-layout">
+    <div class="col-md-4">
+        <AdminNavMenu OnMenuSelection="OnMenuSelection" />
+    </div>
+
+    <div class="col-md-8 content-wrapper">
+        @if (SelectedComponent != null)
+        {
+            <DynamicComponent Type="SelectedComponent" />
+        }
+    </div>
+</div>
+
+
+
+@code {
+    private Type? SelectedComponent;
+
+    private void OnMenuSelection(Type componentType)
+    {
+        SelectedComponent = componentType;
+    }
+}

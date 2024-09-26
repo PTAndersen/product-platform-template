@@ -1,0 +1,89 @@
+﻿@page "/account/profile"
+@using Microsoft.AspNetCore.Identity
+@using PPTWebApp.Data
+@inject UserManager<ApplicationUser> UserManager
+@inject NavigationManager Navigation
+@inject AuthenticationStateProvider AuthenticationStateProvider
+
+<div class="account-profile-container">
+    <h1>My Profile</h1>
+
+    @if (isLoading)
+    {
+        <p>Loading profile...</p>
+    }
+    else if (user == null)
+    {
+        <p>Unable to load profile information.</p>
+    }
+    else
+    {
+        <EditForm Model="userProfile" OnValidSubmit="HandleValidSubmit">
+            <div class="form-group">
+                <label for="name">Name</label>
+                <InputText id="name" class="form-control" @bind-Value="userProfile.Name" />
+            </div>
+
+            <div class="form-group">
+                <label for="email">Email (cannot be changed)</label>
+                <InputText id="email" class="form-control" @bind-Value="userProfile.Email" readonly />
+            </div>
+
+            <div class="form-group">
+                <label for="password">Change Password</label>
+                <InputText id="password" class="form-control" @bind-Value="userProfile.Password" type="password" placeholder="Enter new password (optional)" />
+            </div>
+
+            <button type="submit" class="btn btn-primary">Save Changes</button>
+        </EditForm>
+    }
+</div>
+
+@code {
+    private bool isLoading = true;
+    private ApplicationUser user;
+    private UserProfile userProfile = new UserProfile();
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        var currentUser = authState.User;
+
+        if (currentUser.Identity != null && currentUser.Identity.IsAuthenticated)
+        {
+            user = await UserManager.GetUserAsync(currentUser);
+
+            if (user != null)
+            {
+                userProfile = new UserProfile
+                    {
+                        Name = user.UserName,
+                        Email = user.Email
+                    };
+            }
+        }
+
+        isLoading = false;
+    }
+
+    // Handle form submission
+    private async Task HandleValidSubmit()
+    {
+        if (!string.IsNullOrEmpty(userProfile.Password))
+        {
+            // TODO: Update the password logic
+        }
+
+        // TODO: Update other user profile info logic (e.g., name)
+        // ...
+
+        Navigation.NavigateTo("/account/profile", forceLoad: true);
+    }
+
+    private class UserProfile
+    {
+        public string Name { get; set; }
+        public string Email { get; set; }
+        public string Password { get; set; }
+    }
+}

@@ -1,0 +1,36 @@
+﻿@using PPTWebApp.Components.Pages.Admin
+@rendermode InteractiveServer
+
+@code {
+    [Parameter] public EventCallback<Type> OnMenuSelection { get; set; }
+    private Type? activeComponent;
+
+    private void MenuSelected(Type componentType)
+    {
+        activeComponent = componentType;
+        OnMenuSelection.InvokeAsync(componentType);
+    }
+
+    private string GetNavLinkClass(Type componentType) =>
+        componentType == activeComponent ? "nav-link active" : "nav-link";
+}
+
+<div class="admin-nav-menu navbar-dark bg-dark">
+    <nav class="nav flex-column">
+        <ul class="navbar-nav me-auto">
+            <li class="nav-item">
+                <button @onclick="() => MenuSelected(typeof(AdminDashboard))" class="@GetNavLinkClass(typeof(AdminDashboard))">Dashboard</button>
+            </li>
+            <li class="nav-item">
+                <button @onclick="() => MenuSelected(typeof(AdminTablesOverview))" class="@GetNavLinkClass(typeof(AdminTablesOverview))">Tables</button>
+            </li>
+            <li class="nav-item">
+                <button @onclick="() => MenuSelected(typeof(AdminFrontpageOverview))" class="@GetNavLinkClass(typeof(AdminFrontpageOverview))">Frontpage</button>
+            </li>
+            <li class="nav-item">
+                <button @onclick="() => MenuSelected(typeof(AdminPostsOverview))" class="@GetNavLinkClass(typeof(AdminPostsOverview))">Posts</button>
+            </li>
+        </ul>
+    </nav>
+</div>
+

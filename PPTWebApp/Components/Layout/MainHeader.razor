@@ -1,0 +1,175 @@
+﻿@using Microsoft.AspNetCore.Identity
+@using PPTWebApp.Data
+@using PPTWebApp.Data.Models
+@using PPTWebApp.Data.Services
+@inject BasketService BasketService
+@inject NavigationManager NavigationManager
+@inject AuthenticationStateProvider AuthenticationStateProvider
+@inject UserManager<ApplicationUser> UserManager
+@rendermode InteractiveServer
+
+<header class="navbar navbar-expand-lg navbar-dark bg-dark">
+    <div class="container-fluid">
+        <a class="navbar-brand" href="/">
+            <img src="images/logo.png" alt="Logo" height="40" />
+        </a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class="navbar-nav me-auto">
+                <li class="nav-item">
+                    <NavLink class="nav-link" href="/">Home</NavLink>
+                </li>
+                <li class="nav-item">
+                    <NavLink class="nav-link" href="/highlighted">Main Products</NavLink>
+                </li>
+                <li class="nav-item">
+                    <NavLink class="nav-link" href="/products">Other Products</NavLink>
+                </li>
+                <li class="nav-item">
+                    <NavLink class="nav-link" href="/posts">Posts</NavLink>
+                </li>
+                @if (isAdmin)
+                {
+                    <li class="nav-item">
+                        <NavLink class="nav-link" href="/admin">Admin Panel</NavLink>
+                    </li>
+                }
+            </ul>
+            <ul class="navbar-nav ms-auto">
+                <li class="nav-item dropdown">
+                    <a class="nav-link" href="#" data-bs-toggle="dropdown">
+                        <i class="bi bi-cart-fill"></i>
+                        <span class="badge bg-secondary">@BasketService.GetTotalItems()</span>
+                    </a>
+                    <div class="dropdown-menu dropdown-menu-end basket-dropdown">
+                        @if (BasketService.GetBasketItems().Any())
+                        {
+                            <ul class="list-group">
+                                @foreach (var item in BasketService.GetBasketItems())
+                                {
+                                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                                        <div class="d-flex align-items-center">
+                                            <img src="@item.Product.ImageUrl" alt="@item.Product.Name" width="50" class="me-2" />
+                                            <div>
+                                                <span>@item.Product.Name</span><br />
+                                                <span class="text-muted">x @item.Quantity</span>
+                                            </div>
+                                        </div>
+                                        <div class="d-flex align-items-center">
+                                            <button class="btn btn-outline-secondary btn-sm" @onclick="() => DecreaseQuantity(item)">-</button>
+                                            <span class="mx-2">@item.Quantity</span>
+                                            <button class="btn btn-outline-secondary btn-sm" @onclick="() => IncreaseQuantity(item)">+</button>
+                                        </div>
+                                    </li>
+                                }
+                            </ul>
+                            <div class="dropdown-divider"></div>
+                            <div class="dropdown-item">
+                                <strong>Total Price:</strong> @BasketService.GetTotalPrice().ToString("C")
+                            </div>
+                            <div class="dropdown-item">
+                                <button class="btn btn-primary w-100" @onclick="GoToCheckout">Checkout</button>
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="dropdown-item text-center">Your basket is empty</div>
+                        }
+                    </div>
+                </li>
+
+                @if (!isLoggedIn)
+                {
+                    <li class="nav-item">
+                        <NavLink class="nav-link" href="/account/login">Login</NavLink>
+                    </li>
+                    <li class="nav-item">
+                        <NavLink class="nav-link" href="/account/register">Register</NavLink>
+                    </li>
+                }
+                else
+                {
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            @userName (@email)
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarDropdown">
+                            <li><a class="dropdown-item" href="/account/profile">Profile</a></li>
+                            <li>
+                                <form method="post" action="/account/logout">
+                                    <input type="hidden" name="returnUrl" value="" />
+                                    <AntiforgeryToken />
+                                    <button type="submit" class="dropdown-item">Logout</button>
+                                </form>
+                            </li>
+                        </ul>
+                    </li>
+                }
+            </ul>
+        </div>
+    </div>
+</header>
+
+@code {
+    private bool isLoggedIn = false;
+    private bool isAdmin = false;
+    private string userName = "";
+    private string email = "";
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+
+        isLoggedIn = user.Identity.IsAuthenticated;
+
+        if (isLoggedIn)
+        {
+            var currentUser = await UserManager.GetUserAsync(user);
+            if (currentUser != null)
+            {
+                userName = currentUser.UserName ?? "Unknown User";
+                email = currentUser.Email ?? "No Email";
+                isAdmin = await UserManager.IsInRoleAsync(currentUser, "Admin");
+            }
+            else
+            {
+                userName = "Unknown User";
+                email = "Not able to get user";
+                isAdmin = false;
+            }
+        }
+
+        BasketService.OnChange += StateHasChanged;
+    }
+
+    private void IncreaseQuantity(BasketItem item)
+    {
+        BasketService.AddToBasket(item.Product, 1);
+    }
+
+    private void DecreaseQuantity(BasketItem item)
+    {
+        if (item.Quantity > 1)
+        {
+            item.Quantity--;
+        }
+        else
+        {
+            BasketService.RemoveFromBasket(item);
+        }
+    }
+
+
+    private void GoToCheckout()
+    {
+        NavigationManager.NavigateTo("/checkout");
+    }
+
+    public void Dispose()
+    {
+        BasketService.OnChange -= StateHasChanged;
+    }
+}

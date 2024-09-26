@@ -1,7 +1,5 @@
 ﻿.register-container {
-    margin-top: 5rem;
-    height: auto;
-    min-height: 80vh;
+    height: calc(100vh - 60px); /* TODO: fix the hardcoded header space */
 }
 
 .register-form, .external-login-container {

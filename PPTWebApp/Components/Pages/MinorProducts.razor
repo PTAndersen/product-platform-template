@@ -22,7 +22,6 @@
     private void LoadProducts()
     {
         Products = ProductService.GetProductsInRange(pageIndex * maxProductsToDisplay, maxProductsToDisplay).ToList();
-        Console.WriteLine("Loading products");
         int placeholdersNeeded = maxProductsToDisplay - Products.Count;
         for (int i = 0; i < placeholdersNeeded; i++)
         {
@@ -32,23 +31,19 @@
 
     private void LoadNextPage()
     {
-        Console.WriteLine("LoadNextPage");
         if (pageIndex < totalPages - 1)
         {
             pageIndex++;
             LoadProducts();
-            Console.WriteLine("LoadNextPage");
         }
     }
 
     private void LoadPreviousPage()
     {
-        Console.WriteLine("LoadPreviousPage");
         if (pageIndex > 0)
         {
             pageIndex--;
             LoadProducts();
-            Console.WriteLine("LoadPreviousPage");
         }
     }
 
