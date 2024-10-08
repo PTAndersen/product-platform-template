@@ -1,7 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using PPTWebApp.Data.Models;
+﻿using PPTWebApp.Data.Models;
 
 public class BasketService
 {

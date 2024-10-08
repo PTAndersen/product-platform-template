@@ -34,7 +34,10 @@ builder.Services.AddScoped<PostService>();
 builder.Services.AddScoped<IProductRepository>(provider => new ProductRepository(connectionString));
 builder.Services.AddScoped<ProductService>();
 builder.Services.AddScoped<BasketService>();
+builder.Services.AddScoped<IProductCategoryRepository>(provider => new ProductCategoryRepository(connectionString));
+builder.Services.AddScoped<ProductCategoryService>();
 
+builder.WebHost.UseStaticWebAssets();
 
 builder.Services.AddScoped<AuthenticationStateProvider, IdentityRevalidatingAuthenticationStateProvider>();
 

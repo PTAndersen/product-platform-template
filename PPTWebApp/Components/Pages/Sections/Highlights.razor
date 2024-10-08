@@ -4,18 +4,12 @@
 @inject ProductService ProductService
 
 @code {
-    private List<Product> Products;
+    private List<Product> Products = new List<Product>();
     private int maxProductsToDisplay = 3;
 
     protected override async Task OnInitializedAsync()
     {
-        Products = ProductService.GetProductsInRange(0, maxProductsToDisplay).ToList();
-
-        int placeholdersNeeded = maxProductsToDisplay - Products.Count;
-        for (int i = 0; i < placeholdersNeeded; i++)
-        {
-            Products.Add(null);
-        }
+        Products = ProductService.GetHighlightedProducts(maxProductsToDisplay).ToList();
     }
 }
 

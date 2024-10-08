@@ -2,10 +2,23 @@
 @using PPTWebApp.Data.Models
 @using PPTWebApp.Data.Services
 @inject ProductService ProductService
+@inject ProductCategoryService ProductCategoryService
 @rendermode InteractiveServer
 
 @code {
-    private List<Product> Products;
+    private string searchInput = "";
+    private List<Product> Products = new List<Product>();
+    private List<ProductCategory> ProductCategories = new List<ProductCategory>();
+    private List<string> SortByOptions = new List<string>
+    {
+        "Best Sellers",
+        "Cheapest First",
+        "Most Expensive First",
+    };
+    private string SortBy = "Best Sellers";
+    private ProductCategory? SelectedCategory = null;
+    private decimal minPrice = 0;
+    private decimal maxPrice = 1000;
     private int maxProductsToDisplay = 8;
     private int pageIndex = 0;
     private int totalProducts = 0;
@@ -13,7 +26,9 @@
 
     protected override async Task OnInitializedAsync()
     {
-        totalProducts = ProductService.GetTotalProductCount();
+        ProductCategories = ProductCategoryService.GetAllCategories().ToList();
+
+        totalProducts = ProductService.GetTotalProductCount(SelectedCategory, searchInput, minPrice, maxPrice);
         totalPages = (int)Math.Ceiling((double)totalProducts / maxProductsToDisplay);
 
         LoadProducts();
@@ -21,11 +36,20 @@
 
     private void LoadProducts()
     {
-        Products = ProductService.GetProductsInRange(pageIndex * maxProductsToDisplay, maxProductsToDisplay).ToList();
-        int placeholdersNeeded = maxProductsToDisplay - Products.Count;
-        for (int i = 0; i < placeholdersNeeded; i++)
+        switch (SortBy)
         {
-            Products.Add(null);
+            case "Cheapest First":
+                Products = ProductService.GetCheapestProducts(SelectedCategory, minPrice, maxPrice, pageIndex * maxProductsToDisplay, maxProductsToDisplay).ToList();
+                break;
+            case "Most Expensive First":
+                Products = ProductService.GetMostExpensiveProducts(SelectedCategory, minPrice, maxPrice, pageIndex * maxProductsToDisplay, maxProductsToDisplay).ToList();
+                break;
+            case "Search Results":
+                Products = ProductService.SearchProducts(SelectedCategory, searchInput, minPrice, maxPrice, pageIndex * maxProductsToDisplay, maxProductsToDisplay).ToList();
+                break;
+            default: // Best Sellers
+                Products = ProductService.GetBestsellers(SelectedCategory, minPrice, maxPrice, pageIndex * maxProductsToDisplay, maxProductsToDisplay).ToList();
+                break;
         }
     }
 
@@ -53,8 +77,46 @@
         pageIndex = inputPage - 1;
         LoadProducts();
     }
-}
 
+    private void OnCategoryChange(ChangeEventArgs e)
+    {
+        var selectedCategoryId = int.Parse(e.Value.ToString());
+        SelectedCategory = ProductCategories.FirstOrDefault(c => c.Id == selectedCategoryId);
+        pageIndex = 0;
+        searchInput = "";
+        LoadProducts();
+    }
+
+    private void OnMinPriceChange(ChangeEventArgs e)
+    {
+        minPrice = decimal.TryParse(e.Value.ToString(), out var result) ? result : 0;
+        pageIndex = 0;
+        LoadProducts();
+    }
+
+    private void OnMaxPriceChange(ChangeEventArgs e)
+    {
+        maxPrice = decimal.TryParse(e.Value.ToString(), out var result) ? result : 1000;
+        pageIndex = 0;
+        LoadProducts();
+    }
+
+    private void OnSortByChange(ChangeEventArgs e)
+    {
+        SortBy = e.Value.ToString();
+        pageIndex = 0;
+        LoadProducts();
+    }
+
+    private void OnSearchInputChange(ChangeEventArgs e)
+    {
+        searchInput = e.Value.ToString();
+        SortBy = "Search Results";
+        pageIndex = 0;
+        LoadProducts();
+    }
+
+}
 
 <div class="product-grid-container">
     <div class="query-bar-container">
@@ -65,35 +127,33 @@
         <div id="queryBar" class="query-bar collapse d-lg-block">
             <div class="row gx-3">
                 <div class="col-md-2 mb-2">
-                    <input type="text" placeholder="Search products..." class="form-control" />
+                    <input type="text" placeholder="Search products..." class="form-control"
+                           @bind="searchInput" @oninput="OnSearchInputChange" />
                 </div>
 
                 <div class="col-md-2 mb-2">
-                    <div class="dropdown">
-                        <button class="btn btn-secondary dropdown-toggle w-100" type="button" id="sortDropdown" data-bs-toggle="dropdown" aria-expanded="false">
-                            Sort By
-                        </button>
-                        <ul class="dropdown-menu" aria-labelledby="sortDropdown">
-                            <li><a class="dropdown-item" href="#">Best Sellers</a></li>
-                            <li><a class="dropdown-item" href="#">Cheapest First</a></li>
-                            <li><a class="dropdown-item" href="#">Most Expensive First</a></li>
-                        </ul>
-                    </div>
+                    <select class="form-select" @onchange="OnSortByChange">
+                        @foreach (var option in SortByOptions)
+                        {
+                            <option value="@option" selected="@(option == SortBy)">@option</option>
+                        }
+                    </select>
                 </div>
 
                 <div class="col-md-3 mb-2 d-flex align-items-center">
                     <label for="priceRange" class="me-2">Price Range:</label>
-                    <input type="number" id="minPriceInput" min="0" max="1000" value="0" class="form-control w-25" />
+                    <input type="number" id="minPriceInput" min="0" max="1000000" value="@minPrice" class="form-control w-25" @onchange="OnMinPriceChange" />
                     <span class="mx-2">to</span>
-                    <input type="number" id="maxPriceInput" min="0" max="1000" value="1000" class="form-control w-25" />
+                    <input type="number" id="maxPriceInput" min="0" max="1000000" value="@maxPrice" class="form-control w-25" @onchange="OnMaxPriceChange" />
                 </div>
 
                 <div class="col-md-2 mb-2">
-                    <select class="form-select">
-                        <option value="all">All Categories</option>
-                        <option value="electronics">Electronics</option>
-                        <option value="fashion">Fashion</option>
-                        <option value="home-appliances">Home Appliances</option>
+                    <select class="form-select" @onchange="OnCategoryChange">
+                        <option value="0">All Categories</option>
+                        @foreach (var category in ProductCategories)
+                        {
+                            <option value="@category.Id">@category.Name</option>
+                        }
                     </select>
                 </div>
 
@@ -121,9 +181,9 @@
     </div>
 
     <div class="pagination">
-        <button class="pagination-btn" @onclick="LoadPreviousPage" >←</button>
+        <button class="pagination-btn" @onclick="LoadPreviousPage">←</button>
         <input type="number" value="@(pageIndex + 1)" min="1" max="@totalPages" class="page-input" @onchange="OnPageInputChange" />
         of page: <span class="total-pages"> @totalPages</span>
-        <button class="pagination-btn" @onclick="LoadNextPage" >→</button>
+        <button class="pagination-btn" @onclick="LoadNextPage">→</button>
     </div>
 </div>
