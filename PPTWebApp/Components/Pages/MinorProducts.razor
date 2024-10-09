@@ -17,64 +17,64 @@
     };
     private string SortBy = "Best Sellers";
     private ProductCategory? SelectedCategory = null;
-    private decimal minPrice = 0;
-    private decimal maxPrice = 1000;
-    private int maxProductsToDisplay = 8;
-    private int pageIndex = 0;
-    private int totalProducts = 0;
-    private int totalPages = 1;
+    private decimal MinPrice = 0;
+    private decimal MaxPrice = 1000;
+    private int MaxProductsToDisplay = 8;
+    private int PageIndex = 0;
+    private int TotalProducts = 0;
+    private int TotalPages => (int)Math.Ceiling((double)TotalProducts / MaxProductsToDisplay);
 
     protected override async Task OnInitializedAsync()
     {
         ProductCategories = ProductCategoryService.GetAllCategories().ToList();
 
-        totalProducts = ProductService.GetTotalProductCount(SelectedCategory, searchInput, minPrice, maxPrice);
-        totalPages = (int)Math.Ceiling((double)totalProducts / maxProductsToDisplay);
+        TotalProducts = ProductService.GetTotalProductCount(SelectedCategory, searchInput, MinPrice, MaxPrice);
 
         LoadProducts();
     }
 
     private void LoadProducts()
     {
+        TotalProducts = ProductService.GetTotalProductCount(SelectedCategory, searchInput, MinPrice, MaxPrice);
         switch (SortBy)
         {
             case "Cheapest First":
-                Products = ProductService.GetCheapestProducts(SelectedCategory, minPrice, maxPrice, pageIndex * maxProductsToDisplay, maxProductsToDisplay).ToList();
+                Products = ProductService.GetCheapestProducts(SelectedCategory, MinPrice, MaxPrice, PageIndex * MaxProductsToDisplay, MaxProductsToDisplay).ToList();
                 break;
             case "Most Expensive First":
-                Products = ProductService.GetMostExpensiveProducts(SelectedCategory, minPrice, maxPrice, pageIndex * maxProductsToDisplay, maxProductsToDisplay).ToList();
+                Products = ProductService.GetMostExpensiveProducts(SelectedCategory, MinPrice, MaxPrice, PageIndex * MaxProductsToDisplay, MaxProductsToDisplay).ToList();
                 break;
             case "Search Results":
-                Products = ProductService.SearchProducts(SelectedCategory, searchInput, minPrice, maxPrice, pageIndex * maxProductsToDisplay, maxProductsToDisplay).ToList();
+                Products = ProductService.SearchProducts(SelectedCategory, searchInput, MinPrice, MaxPrice, PageIndex * MaxProductsToDisplay, MaxProductsToDisplay).ToList();
                 break;
-            default: // Best Sellers
-                Products = ProductService.GetBestsellers(SelectedCategory, minPrice, maxPrice, pageIndex * maxProductsToDisplay, maxProductsToDisplay).ToList();
+            default:
+                Products = ProductService.GetBestsellers(SelectedCategory, MinPrice, MaxPrice, PageIndex * MaxProductsToDisplay, MaxProductsToDisplay).ToList();
                 break;
         }
     }
 
     private void LoadNextPage()
     {
-        if (pageIndex < totalPages - 1)
+        if (PageIndex < TotalPages - 1)
         {
-            pageIndex++;
+            PageIndex++;
             LoadProducts();
         }
     }
 
     private void LoadPreviousPage()
     {
-        if (pageIndex > 0)
+        if (PageIndex > 0)
         {
-            pageIndex--;
+            PageIndex--;
             LoadProducts();
         }
     }
 
     private void OnPageInputChange(ChangeEventArgs e)
     {
-        int inputPage = Math.Max(1, Math.Min(totalPages, int.Parse(e.Value.ToString())));
-        pageIndex = inputPage - 1;
+        int inputPage = Math.Max(1, Math.Min(TotalPages, int.Parse(e.Value.ToString())));
+        PageIndex = inputPage - 1;
         LoadProducts();
     }
 
@@ -82,29 +82,29 @@
     {
         var selectedCategoryId = int.Parse(e.Value.ToString());
         SelectedCategory = ProductCategories.FirstOrDefault(c => c.Id == selectedCategoryId);
-        pageIndex = 0;
+        PageIndex = 0;
         searchInput = "";
         LoadProducts();
     }
 
     private void OnMinPriceChange(ChangeEventArgs e)
     {
-        minPrice = decimal.TryParse(e.Value.ToString(), out var result) ? result : 0;
-        pageIndex = 0;
+        MinPrice = decimal.TryParse(e.Value.ToString(), out var result) ? result : 0;
+        PageIndex = 0;
         LoadProducts();
     }
 
     private void OnMaxPriceChange(ChangeEventArgs e)
     {
-        maxPrice = decimal.TryParse(e.Value.ToString(), out var result) ? result : 1000;
-        pageIndex = 0;
+        MaxPrice = decimal.TryParse(e.Value.ToString(), out var result) ? result : 1000;
+        PageIndex = 0;
         LoadProducts();
     }
 
     private void OnSortByChange(ChangeEventArgs e)
     {
         SortBy = e.Value.ToString();
-        pageIndex = 0;
+        PageIndex = 0;
         LoadProducts();
     }
 
@@ -112,7 +112,7 @@
     {
         searchInput = e.Value.ToString();
         SortBy = "Search Results";
-        pageIndex = 0;
+        PageIndex = 0;
         LoadProducts();
     }
 
@@ -142,9 +142,9 @@
 
                 <div class="col-md-3 mb-2 d-flex align-items-center">
                     <label for="priceRange" class="me-2">Price Range:</label>
-                    <input type="number" id="minPriceInput" min="0" max="1000000" value="@minPrice" class="form-control w-25" @onchange="OnMinPriceChange" />
+                    <input type="number" id="minPriceInput" min="0" max="1000000" value="@MinPrice" class="form-control w-25" @onchange="OnMinPriceChange" />
                     <span class="mx-2">to</span>
-                    <input type="number" id="maxPriceInput" min="0" max="1000000" value="@maxPrice" class="form-control w-25" @onchange="OnMaxPriceChange" />
+                    <input type="number" id="maxPriceInput" min="0" max="1000000" value="@MaxPrice" class="form-control w-25" @onchange="OnMaxPriceChange" />
                 </div>
 
                 <div class="col-md-2 mb-2">
@@ -181,9 +181,10 @@
     </div>
 
     <div class="pagination">
-        <button class="pagination-btn" @onclick="LoadPreviousPage">←</button>
-        <input type="number" value="@(pageIndex + 1)" min="1" max="@totalPages" class="page-input" @onchange="OnPageInputChange" />
-        of page: <span class="total-pages"> @totalPages</span>
-        <button class="pagination-btn" @onclick="LoadNextPage">→</button>
+        <button class="pagination-btn" @onclick="LoadPreviousPage" disabled="@((PageIndex == 0))">←</button>
+        <span class="pagination-text">Page</span>
+        <input type="number" value="@(PageIndex + 1)" min="1" max="@TotalPages" class="page-input" @onchange="OnPageInputChange" />
+        <span class="pagination-text">of @TotalPages</span>
+        <button class="pagination-btn" @onclick="LoadNextPage" disabled="@((PageIndex == TotalPages - 1))">→</button>
     </div>
 </div>

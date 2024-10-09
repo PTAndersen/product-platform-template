@@ -11,8 +11,31 @@ var builder = WebApplication.CreateBuilder(args);
 
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 
-builder.Services.AddScoped<IUserStore<ApplicationUser>>(provider => new CustomUserStore(connectionString));
-builder.Services.AddScoped<IRoleStore<IdentityRole>>(provider => new CustomRoleStore(connectionString));
+builder.Services.AddScoped<IApplicationUserRepository>(provider => new ApplicationUserRepository(connectionString));
+builder.Services.AddScoped<IUserStore<ApplicationUser>>(provider =>
+{
+    var userRepository = provider.GetRequiredService<IApplicationUserRepository>();
+    return new ApplicationUserService(userRepository);
+});
+builder.Services.AddScoped<ApplicationUserService>(provider =>
+{
+    var userRepository = provider.GetRequiredService<IApplicationUserRepository>();
+    return new ApplicationUserService(userRepository);
+});
+
+
+builder.Services.AddScoped<IApplicationRoleRepository>(provider => new ApplicationRoleRepository(connectionString));
+builder.Services.AddScoped<IRoleStore<IdentityRole>>(provider =>
+{
+    var roleRepository = provider.GetRequiredService<IApplicationRoleRepository>();
+    return new ApplicationRoleService(roleRepository);
+});
+builder.Services.AddScoped<ApplicationRoleService>(provider =>
+{
+    var roleRepository = provider.GetRequiredService<IApplicationRoleRepository>();
+    return new ApplicationRoleService(roleRepository);
+});
+
 
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();

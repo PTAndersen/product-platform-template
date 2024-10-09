@@ -102,7 +102,12 @@ namespace PPTWebApp.Data
                         id SERIAL PRIMARY KEY,
                         title VARCHAR(255) NOT NULL,
                         content TEXT NOT NULL,
-                        dateposted TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+                        imageurl VARCHAR(255) NOT NULL,
+                        imagecompromise VARCHAR(50) NOT NULL,
+                        dateposted TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                        createdat TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                        modifiedat TIMESTAMP,
+                        deletedat TIMESTAMP
                     );
 
                     CREATE TABLE IF NOT EXISTS productcategories (
@@ -226,6 +231,26 @@ namespace PPTWebApp.Data
                 connection.Open();
 
                 string createTriggersSql = @"
+                    CREATE OR REPLACE FUNCTION update_modifiedat_posts()
+                    RETURNS TRIGGER AS $$
+                    BEGIN
+                        NEW.modifiedat = CURRENT_TIMESTAMP;
+                        RETURN NEW;
+                    END;
+                    $$ LANGUAGE plpgsql;
+
+                    DO $$
+                    BEGIN
+                        IF NOT EXISTS (
+                            SELECT 1 FROM pg_trigger WHERE tgname = 'update_modifiedat_trigger_posts'
+                        ) THEN
+                            CREATE TRIGGER update_modifiedat_trigger_posts
+                            BEFORE UPDATE ON posts
+                            FOR EACH ROW
+                            EXECUTE FUNCTION update_modifiedat_posts();
+                        END IF;
+                    END $$;
+
                     CREATE OR REPLACE FUNCTION update_modifiedat_productcategories()
                     RETURNS TRIGGER AS $$
                     BEGIN
@@ -464,17 +489,20 @@ namespace PPTWebApp.Data
                     }
 
                     string insertPostSql = @"
-                INSERT INTO posts (title, content, dateposted)
-                SELECT @Title, @Content, @DatePosted
-                WHERE NOT EXISTS (SELECT 1 FROM posts WHERE title = @Title)";
+                        INSERT INTO posts (title, content, imageurl, imagecompromise, dateposted)
+                        SELECT @Title, @Content, @ImageUrl, @ImageCompromise, @DatePosted
+                        WHERE NOT EXISTS (SELECT 1 FROM posts WHERE title = @Title)";
 
                     using (var insertPostCommand = new NpgsqlCommand(insertPostSql, connection))
                     {
                         insertPostCommand.Parameters.AddWithValue("@Title", $"Post {i}");
                         insertPostCommand.Parameters.AddWithValue("@Content", $"This is the content of post {i}.");
+                        insertPostCommand.Parameters.AddWithValue("@ImageUrl", "https://via.placeholder.com/400x400");
+                        insertPostCommand.Parameters.AddWithValue("@ImageCompromise", "vertical");
                         insertPostCommand.Parameters.AddWithValue("@DatePosted", DateTime.Now);
                         insertPostCommand.ExecuteNonQuery();
                     }
+
                 }
 
                 connection.Close();

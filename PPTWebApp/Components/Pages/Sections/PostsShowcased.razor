@@ -4,26 +4,14 @@
 @inject PostService PostService
 
 <div class="posts-container d-flex flex-column align-items-center justify-content-center">
-    <h3 class="text-center">Latest Posts</h3>
+    <h3 class="text-center">Highlighted Posts</h3>
 
     <div class="container">
-        <div class="row justify-content-center h-100">
-            @foreach (var post in posts.Take(3))
+        <div class="row justify-content-center">
+            @foreach (var post in posts)
             {
-                <div class="col-12 col-md-4 mb-4">
-                    <div class="post-box p-3 h-100">
-                        <h2>@post.Title</h2>
-                        <p>@post.Content</p>
-                        <small class="text-muted">@post.DatePosted.ToString("MMMM dd, yyyy")</small>
-                    </div>
-                </div>
-            }
-            @for (var i = posts.Count(); i < 3; i++)
-            {
-                <div class="col-12 col-md-4 mb-4">
-                    <div class="post-box p-3 h-100 empty-post">
-                        <p class="text-muted text-center">No post available</p>
-                    </div>
+                <div class="col-12 col-md-6 col-lg-4 d-flex justify-content-center mb-4">
+                    <PostPreview Post="post" />
                 </div>
             }
         </div>
@@ -35,6 +23,6 @@
 
     protected override async Task OnInitializedAsync()
     {
-        posts = PostService.GetPostsInRange(0, 3);
+        posts = PostService.GetHighlightedPosts();
     }
 }

@@ -1,0 +1,44 @@
+﻿@using PPTWebApp.Data.Models
+@inject NavigationManager NavigationManager
+
+@if (Post != null)
+{
+    <div class="post-preview">
+        <img src="@Post.ImageUrl" alt="@Post.Title" class="@ImageClass" />
+        <div class="post-info">
+            <h4>@Post.Title</h4>
+            <small class="text-muted">@Post.DatePosted.ToString("MMMM dd, yyyy")</small>
+
+            <div class="post-actions">
+                <button class="btn btn-secondary" @onclick="ViewPost">View Post</button>
+            </div>
+        </div>
+    </div>
+}
+else
+{
+    <div class="post-preview">
+        <div class="post-info">
+            <h4>No Post Available</h4>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter] public Post? Post { get; set; }
+
+    private string ImageClass => GetImageClass(Post?.ImageCompromise);
+
+    private string GetImageClass(string imageCompromise)
+    {
+        return imageCompromise == "horizontal" ? "image-horizontal" : "image-vertical";
+    }
+
+    private void ViewPost()
+    {
+        if (Post != null)
+        {
+            NavigationManager.NavigateTo($"/posts/{Post.Id}");
+        }
+    }
+}

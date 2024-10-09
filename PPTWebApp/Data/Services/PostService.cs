@@ -12,22 +12,22 @@ namespace PPTWebApp.Data.Services
             _postRepository = postRepository;
         }
 
-        public IEnumerable<Post> GetPostsInRange(int startIndex, int range)
+        public IEnumerable<Post> GetHighlightedPosts()
         {
-            return _postRepository.GetPostsInRange(startIndex, range);
+            return _postRepository.GetPostsInRange(null, 0, 3);
         }
 
-        public IEnumerable<Post> GetAllPosts()
+        public IEnumerable<Post> GetPostsInRange(string? keyword, int startIndex, int range)
         {
-            return _postRepository.GetAllPosts();
+            return _postRepository.GetPostsInRange(keyword, startIndex, range);
         }
 
-        public int GetTotalPostCount()
+        public int GetTotalPostCount(string? keyword)
         {
-            return _postRepository.GetTotalPostCount();
+            return _postRepository.GetTotalPostCount(keyword);
         }
 
-        public Post GetPostById(int id)
+        public Post? GetPostById(int id)
         {
             return _postRepository.GetPostById(id);
         }

@@ -5,10 +5,9 @@ namespace PPTWebApp.Data.Repositories
 {
     public interface IPostRepository
     {
-        IEnumerable<Post> GetAllPosts();
-        IEnumerable<Post> GetPostsInRange(int startIndex, int range);
-        int GetTotalPostCount();
-        Post GetPostById(int id);
+        IEnumerable<Post> GetPostsInRange(string? keyword, int startIndex, int range);
+        int GetTotalPostCount(string? keyword);
+        Post? GetPostById(int id);
         void AddPost(Post post);
         void UpdatePost(Post post);
         void DeletePost(int id);

@@ -1,43 +1,48 @@
-﻿@page "/post/{url}"
-@inject HttpClient Http
-@using System.Net.Http
-@using System.Net.Http.Json
+﻿@page "/posts/{Id:int}"
+@using PPTWebApp.Data.Models
+@using PPTWebApp.Data.Services
+@inject PostService PostService
 
 <div class="post-viewer-container">
     @if (isLoading)
     {
         <p>Loading post...</p>
     }
-    else if (!string.IsNullOrEmpty(postContent))
+    else if (post != null)
     {
         <div class="post-content" @onclick="HandleClick">
-            @((MarkupString)postContent)
+            @((MarkupString)post.Content)
         </div>
     }
     else
     {
-        <p>Unable to load post.</p>
+        <p>Unable to load post. Please check the URL and try again.</p>
     }
 </div>
 
 @code {
     [Parameter]
-    public string Url { get; set; }
+    public int Id { get; set; } // Post ID from the URL
 
-    private string postContent;
+    private Post post;
     private bool isLoading = true;
 
-    protected override async Task OnInitializedAsync()
+    protected override async Task OnParametersSetAsync()
     {
+        await LoadPostContent();
+    }
+
+    private async Task LoadPostContent()
+    {
+        isLoading = true;
         try
         {
-            var response = await Http.GetStringAsync(Url);
-            postContent = response;
+            post = PostService.GetPostById(Id);
         }
         catch (Exception ex)
         {
             Console.WriteLine($"Error loading post: {ex.Message}");
-            postContent = null;
+            post = null;
         }
         finally
         {
@@ -47,5 +52,6 @@
 
     private void HandleClick()
     {
+        // Optional: Add click handling logic if needed
     }
 }

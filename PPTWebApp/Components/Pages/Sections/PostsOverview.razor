@@ -10,19 +10,15 @@
         <div class="query-bar">
             <div class="row gx-3 justify-content-center">
                 <div class="col-md-3 mb-2">
-                    <input type="text" placeholder="Search posts..." class="form-control" />
+                    <input type="text" placeholder="Search posts..." class="form-control"
+                           @bind="SearchInput" @oninput="OnSearchInputChange" />
                 </div>
 
                 <div class="col-md-2 mb-2">
-                    <div class="dropdown">
-                        <button class="btn btn-secondary dropdown-toggle w-100" type="button" id="sortDropdown" data-bs-toggle="dropdown" aria-expanded="false">
-                            Sort By
-                        </button>
-                        <ul class="dropdown-menu" aria-labelledby="sortDropdown">
-                            <li><a class="dropdown-item" href="#">Newest First</a></li>
-                            <li><a class="dropdown-item" href="#">Oldest First</a></li>
-                        </ul>
-                    </div>
+                    <select class="form-select" @onchange="OnSortByChange">
+                        <option value="Newest First" selected="@(SortBy == "Newest First")">Newest First</option>
+                        <option value="Oldest First" selected="@(SortBy == "Oldest First")">Oldest First</option>
+                    </select>
                 </div>
 
                 <div class="col-md-3 mb-2">
@@ -39,70 +35,83 @@
 
     <div class="container mt-4">
         <div class="row">
-            @foreach (var post in paginatedPosts)
+            @foreach (var post in Posts)
             {
-                <div class="col-12 col-md-6 col-lg-3 mb-4">
-                    <div class="post-box p-3 h-100">
-                        <h2>@post.Title</h2>
-                        <p>@post.Content</p>
-                        <small class="text-muted">@post.DatePosted.ToString("MMMM dd, yyyy")</small>
-                    </div>
+                <div class="col-12 col-md-6 col-lg-3 mb-4 d-flex align-items-stretch">
+                    <PostPreview Post="post" />
                 </div>
             }
         </div>
     </div>
 
     <div class="pagination">
-        <button class="pagination-btn" @onclick="LoadPreviousPage" disabled="@((pageIndex == 0))">←</button>
-        <input type="number" value="@(pageIndex + 1)" min="1" max="@totalPages" class="page-input" @onchange="OnPageInputChange" />
-        of <span class="total-pages">@totalPages</span>
-        <button class="pagination-btn" @onclick="LoadNextPage" disabled="@((pageIndex == totalPages - 1))">→</button>
+        <button class="pagination-btn" @onclick="LoadPreviousPage" disabled="@((PageIndex == 0))">←</button>
+        <span class="pagination-text">Page</span>
+        <input type="number" value="@(PageIndex + 1)" min="1" max="@TotalPages" class="page-input" @onchange="OnPageInputChange" />
+        <span class="pagination-text">of @TotalPages</span>
+        <button class="pagination-btn" @onclick="LoadNextPage" disabled="@((PageIndex == TotalPages - 1))">→</button>
     </div>
+
 </div>
 
 @code {
-    private List<Post> paginatedPosts = new List<Post>();
-    private int maxPostsToDisplay = 8;
-    private int pageIndex = 0;
-    private int totalPosts = 0;
-    private int totalPages = 1;
+    private IEnumerable<Post> Posts;
+    private string SearchInput = "";
+    private string SortBy = "Newest First";
+    private int MaxPostsToDisplay = 8;
+    private int PageIndex = 0;
+    private int TotalPosts = 0;
+    private int TotalPages => (int)Math.Ceiling((double)TotalPosts / MaxPostsToDisplay);
 
     protected override void OnInitialized()
     {
-        totalPosts = PostService.GetTotalPostCount();
-        totalPages = (int)Math.Ceiling((double)totalPosts / maxPostsToDisplay);
+        TotalPosts = PostService.GetTotalPostCount(null);
         LoadPosts();
     }
 
     private void LoadPosts()
     {
-        paginatedPosts = PostService.GetPostsInRange(pageIndex * maxPostsToDisplay, maxPostsToDisplay).ToList();
+        TotalPosts = PostService.GetTotalPostCount(SearchInput);
+        Posts = PostService.GetPostsInRange(SearchInput, PageIndex * MaxPostsToDisplay, MaxPostsToDisplay);
     }
 
     private void LoadNextPage()
     {
-        if (pageIndex < totalPages - 1)
+        if (PageIndex < TotalPages - 1)
         {
-            pageIndex++;
+            PageIndex++;
             LoadPosts();
         }
     }
 
     private void LoadPreviousPage()
     {
-        if (pageIndex > 0)
+        if (PageIndex > 0)
         {
-            pageIndex--;
+            PageIndex--;
             LoadPosts();
         }
     }
 
     private void OnPageInputChange(ChangeEventArgs e)
     {
-        if (int.TryParse(e.Value?.ToString(), out int inputPage))
-        {
-            pageIndex = Math.Clamp(inputPage - 1, 0, totalPages - 1);
-            LoadPosts();
-        }
+        int inputPage = Math.Max(1, Math.Min(TotalPages, int.Parse(e.Value.ToString())));
+        PageIndex = inputPage - 1;
+        LoadPosts();
+        
+    }
+
+    private void OnSearchInputChange(ChangeEventArgs e)
+    {
+        SearchInput = e.Value?.ToString() ?? string.Empty;
+        PageIndex = 0;
+        LoadPosts();
+    }
+
+    private void OnSortByChange(ChangeEventArgs e)
+    {
+        SortBy = e.Value?.ToString() ?? "Newest First";
+        PageIndex = 0;
+        LoadPosts();
     }
 }

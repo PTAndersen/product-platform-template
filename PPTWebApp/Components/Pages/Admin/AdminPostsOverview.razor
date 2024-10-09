@@ -2,9 +2,12 @@
 @using Microsoft.AspNetCore.Identity
 @using PPTWebApp.Components.Layout
 @using PPTWebApp.Data
+@using PPTWebApp.Data.Models
+@using PPTWebApp.Data.Services
 @inject NavigationManager Navigation
 @inject UserManager<ApplicationUser> UserManager
 @inject AuthenticationStateProvider AuthenticationStateProvider
+@inject PostService PostService
 @rendermode InteractiveServer
 
 <div class="posts-overview-scroll-container">
@@ -18,7 +21,7 @@
             <EditForm Model="@postModel" OnValidSubmit="HandleValidSubmit">
                 <div class="form-group">
                     <label for="postTitle">Post Title</label>
-                    <input id="postTitle" class="form-control" @bind="postModel.Title" placeholder="Enter post title" />
+                    <input id="postTitle" class="form-control" @bind="postModel.Title" placeholder="Enter post title" required />
                 </div>
 
                 <div class="form-group">
@@ -28,7 +31,21 @@
 
                 <div class="form-group">
                     <label for="postDate">Date</label>
-                    <input id="postDate" class="form-control" type="text" @bind="postModel.Date" readonly />
+                    <input id="postDate" class="form-control" type="date" @bind="postModel.DatePosted" />
+                </div>
+
+                <div class="form-group">
+                    <label for="imageUrl">Image URL</label>
+                    <input id="imageUrl" class="form-control" @bind="postModel.ImageUrl" placeholder="Enter image URL" required />
+                </div>
+
+
+                <div class="form-group">
+                    <label for="imageCompromise">Image Compromise</label>
+                    <select id="imageCompromise" class="form-control" @bind="postModel.ImageCompromise" required>
+                        <option value="vertical">Vertical</option>
+                        <option value="horizontal">Horizontal</option>
+                    </select>
                 </div>
 
                 <div class="form-group">
@@ -48,9 +65,8 @@
 
 @code {
     private bool isAdmin = false;
-
-    private PostModel postModel = new PostModel();
-    private string htmlFileContent;
+    private Post? postModel;
+    private string? htmlFileContent;
 
     protected override async Task OnInitializedAsync()
     {
@@ -70,6 +86,21 @@
         {
             Navigation.NavigateTo("/");
         }
+
+        InitializePostModel();
+    }
+
+    private void InitializePostModel()
+    {
+        postModel = new Post
+            {
+                Title = string.Empty,
+                Content = string.Empty,
+                ImageUrl = "https://via.placeholder.com/400x400", // make this an empty string for production
+                ImageCompromise = "vertical",
+                Author = string.Empty,
+                DatePosted = DateTime.Now
+            };
     }
 
     private async Task HandleFileSelected(InputFileChangeEventArgs e)
@@ -87,25 +118,33 @@
         }
     }
 
-    private void HandleValidSubmit()
+    private async Task HandleValidSubmit()
     {
-        Console.WriteLine($"Post Title: {postModel.Title}");
-        Console.WriteLine($"Author: {postModel.Author}");
-        Console.WriteLine($"Date: {postModel.Date}");
-        Console.WriteLine($"HTML Content Length: {htmlFileContent?.Length}");
+        if (postModel == null)
+        {
+            Console.WriteLine("Post model is not initialized.");
+            return;
+        }
 
-        // TODO: Add logic here to save the post data (title, author, date, HTML content)
-    }
+        try
+        {
+            if (htmlFileContent == null)
+            {
+                Console.WriteLine("No HTML content provided for the post.");
+                return;
+            }
 
-    protected override void OnInitialized()
-    {
-        postModel.Date = DateTime.Now.ToString("yyyy-MM-dd");
-    }
+            postModel.Content = htmlFileContent;
+            postModel.DatePosted = postModel.DatePosted == DateTime.MinValue ? DateTime.Now : postModel.DatePosted;
 
-    private class PostModel
-    {
-        public string Title { get; set; }
-        public string Author { get; set; }
-        public string Date { get; set; }
+            PostService.AddPost(postModel);
+
+            Console.WriteLine("Post successfully added.");
+            Navigation.NavigateTo("/posts");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error adding post: {ex.Message}");
+        }
     }
 }

@@ -62,6 +62,11 @@
     cursor: pointer;
 }
 
+.pagination-btn:disabled {
+    background-color: #b1b1b1;
+    cursor: not-allowed;
+}
+
 .page-input {
     width: 3rem;
     text-align: center;
