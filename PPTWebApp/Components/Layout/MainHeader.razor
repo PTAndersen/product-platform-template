@@ -6,6 +6,10 @@
 @inject NavigationManager NavigationManager
 @inject AuthenticationStateProvider AuthenticationStateProvider
 @inject UserManager<ApplicationUser> UserManager
+@inject VisitorSessionService VisitorSessionService
+@inject VisitorPageViewService VisitorPageViewService
+@inject UserActivityService UserActivityService
+@inject IJSRuntime JSRuntime
 @rendermode InteractiveServer
 
 <header class="navbar navbar-expand-lg navbar-dark bg-dark">
@@ -112,11 +116,13 @@
     </div>
 </header>
 
+
 @code {
     private bool isLoggedIn = false;
     private bool isAdmin = false;
     private string userName = "";
     private string email = "";
+    private bool isFirstRender = true;
 
     protected override async Task OnInitializedAsync()
     {
@@ -145,6 +151,62 @@
         BasketService.OnChange += StateHasChanged;
     }
 
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender && isFirstRender)
+        {
+            isFirstRender = false;
+            NavigationManager.LocationChanged += async (sender, args) => await TrackActivityAndSessionAsync();
+            await TrackActivityAndSessionAsync();
+        }
+    }
+
+    private async Task TrackActivityAndSessionAsync()
+    {
+        await TrackVisitorSessionAsync();
+        await TrackUserActivityAsync();
+    }
+
+    private async Task TrackVisitorSessionAsync()
+    {
+        if (isAdmin)
+        {
+            return;
+        }
+
+        var sessionIdString = await JSRuntime.InvokeAsync<string>("localStorage.getItem", new object[] { "visitorSessionId" });
+        Guid? sessionId = null;
+
+        if (Guid.TryParse(sessionIdString, out var parsedSessionId))
+        {
+            sessionId = parsedSessionId;
+        }
+
+        var validSessionId = VisitorSessionService.HandleSession(sessionId);
+
+        await JSRuntime.InvokeAsync<object>("localStorage.setItem", new object[] { "visitorSessionId", validSessionId.ToString() });
+
+        var pageUrl = NavigationManager.Uri;
+        var referrer = await JSRuntime.InvokeAsync<string>("eval", "document.referrer");
+        await Task.Run(() => VisitorPageViewService.LogPageView(validSessionId, pageUrl, referrer));
+    }
+
+    private async Task TrackUserActivityAsync()
+    {
+        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+
+        if (user.Identity?.IsAuthenticated == true)
+        {
+            var userIdClaim = user.FindFirst(c => c.Type == "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier");
+
+            if (userIdClaim != null && Guid.TryParse(userIdClaim.Value, out Guid userId))
+            {
+                await Task.Run(() => UserActivityService.UpdateUserActivity(userId));
+            }
+        }
+    }
+
     private void IncreaseQuantity(BasketItem item)
     {
         BasketService.AddToBasket(item.Product, 1);
@@ -162,7 +224,6 @@
         }
     }
 
-
     private void GoToCheckout()
     {
         NavigationManager.NavigateTo("/checkout");
@@ -170,6 +231,7 @@
 
     public void Dispose()
     {
+        NavigationManager.LocationChanged -= async (sender, args) => await TrackActivityAndSessionAsync();
         BasketService.OnChange -= StateHasChanged;
     }
 }

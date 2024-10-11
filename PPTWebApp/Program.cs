@@ -11,6 +11,11 @@ using PPTWebApp.Data.Services;
 var builder = WebApplication.CreateBuilder(args);
 
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+if (string.IsNullOrWhiteSpace(connectionString))
+{
+    throw new InvalidOperationException("Connection string 'DefaultConnection' is either missing or empty.");
+}
+
 
 builder.Services.AddScoped<IApplicationUserRepository>(provider => new ApplicationUserRepository(connectionString));
 builder.Services.AddScoped<IUserStore<ApplicationUser>>(provider =>
@@ -65,6 +70,12 @@ builder.Services.AddScoped<IProductCategoryRepository>(provider => new ProductCa
 builder.Services.AddScoped<ProductCategoryService>();
 builder.Services.AddScoped<IDiscountRepository>(provider => new DiscountRepository(connectionString));
 builder.Services.AddScoped<DiscountService>();
+builder.Services.AddScoped<IVisitorSessionRepository>(provider => new VisitorSessionRepository(connectionString));
+builder.Services.AddScoped<VisitorSessionService>();
+builder.Services.AddScoped<IVisitorPageViewRepository>(provider => new VisitorPageViewRepository(connectionString));
+builder.Services.AddScoped<VisitorPageViewService>();
+builder.Services.AddScoped<IUserActivityRepository>(provider => new UserActivityRepository(connectionString));
+builder.Services.AddScoped<UserActivityService>();
 
 builder.WebHost.UseStaticWebAssets();
 

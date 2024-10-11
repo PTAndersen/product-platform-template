@@ -98,6 +98,23 @@ namespace PPTWebApp.Data
                         CONSTRAINT fk_aspnetroleclaims_aspnetroles FOREIGN KEY (roleid) REFERENCES aspnetroles (id) ON DELETE CASCADE
                     );
 
+                    CREATE TABLE IF NOT EXISTS visitorsessions (
+                        id SERIAL PRIMARY KEY,
+                        sessionid UUID UNIQUE NOT NULL DEFAULT gen_random_uuid(),
+                        startedat TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                        endedat TIMESTAMP
+                    );
+
+                    CREATE TABLE IF NOT EXISTS visitorpageviews (
+                        id SERIAL PRIMARY KEY,
+                        sessionid UUID NOT NULL,
+                        pageurl VARCHAR(255) NOT NULL,
+                        viewedat TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                        referrer TEXT,
+                        CONSTRAINT fk_visitorpageviews_visitorsessions
+                            FOREIGN KEY (sessionid) REFERENCES visitorsessions (sessionid) ON DELETE CASCADE
+                    );
+
                     CREATE TABLE IF NOT EXISTS posts (
                         id SERIAL PRIMARY KEY,
                         title VARCHAR(255) NOT NULL,
@@ -108,15 +125,6 @@ namespace PPTWebApp.Data
                         createdat TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
                         modifiedat TIMESTAMP,
                         deletedat TIMESTAMP
-                    );
-
-                    CREATE TABLE IF NOT EXISTS producthighlights (
-                        id SERIAL PRIMARY KEY,
-                        productid INT,
-                        position INT NOT NULL,
-                        createdat TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-                        FOREIGN KEY (productid) REFERENCES products(id) ON DELETE CASCADE,
-                        UNIQUE (position)  -- Ensures that each position is unique for the highlights
                     );
 
                     CREATE TABLE IF NOT EXISTS productcategories (
@@ -163,6 +171,15 @@ namespace PPTWebApp.Data
                         deletedat TIMESTAMP
                     );
 
+                    CREATE TABLE IF NOT EXISTS producthighlights (
+                        id SERIAL PRIMARY KEY,
+                        productid INT,
+                        position INT NOT NULL,
+                        createdat TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                        FOREIGN KEY (productid) REFERENCES products(id) ON DELETE CASCADE,
+                        UNIQUE (position)
+                    );
+
                     CREATE TABLE IF NOT EXISTS userprofiles (
                         id SERIAL PRIMARY KEY,
                         username VARCHAR(255) NOT NULL,
@@ -172,6 +189,12 @@ namespace PPTWebApp.Data
                         telephone VARCHAR(20),
                         createdat TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
                         modifiedat TIMESTAMP
+                    );
+
+                    CREATE TABLE IF NOT EXISTS useractivity (
+                        userid UUID NOT NULL,
+                        lastactivityat TIMESTAMP NOT NULL,
+                        PRIMARY KEY (userid)
                     );
 
                     CREATE TABLE IF NOT EXISTS useraddresses (

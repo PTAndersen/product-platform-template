@@ -28,7 +28,7 @@ namespace PPTWebApp.Data.Repositories
                 });
             }
 
-            role.NormalizedName = role.Name.ToUpperInvariant(); // Normalize the role name
+            role.NormalizedName = role.Name.ToUpperInvariant();
 
             using (var connection = new NpgsqlConnection(_connectionString))
             {
@@ -102,7 +102,7 @@ namespace PPTWebApp.Data.Repositories
             using (var connection = new NpgsqlConnection(_connectionString))
             {
                 var command = new NpgsqlCommand("SELECT id, name, normalizedname FROM aspnetroles WHERE id = @RoleId", connection);
-                command.Parameters.Add("@RoleId", NpgsqlTypes.NpgsqlDbType.Uuid).Value = Guid.Parse(roleId); // Convert to UUID
+                command.Parameters.Add("@RoleId", NpgsqlTypes.NpgsqlDbType.Uuid).Value = Guid.Parse(roleId);
 
                 connection.Open();
                 using (var reader = await command.ExecuteReaderAsync(CommandBehavior.SingleRow, cancellationToken))
