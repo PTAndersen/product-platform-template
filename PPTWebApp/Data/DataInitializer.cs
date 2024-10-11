@@ -110,6 +110,15 @@ namespace PPTWebApp.Data
                         deletedat TIMESTAMP
                     );
 
+                    CREATE TABLE IF NOT EXISTS producthighlights (
+                        id SERIAL PRIMARY KEY,
+                        productid INT,
+                        position INT NOT NULL,
+                        createdat TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                        FOREIGN KEY (productid) REFERENCES products(id) ON DELETE CASCADE,
+                        UNIQUE (position)  -- Ensures that each position is unique for the highlights
+                    );
+
                     CREATE TABLE IF NOT EXISTS productcategories (
                         id SERIAL PRIMARY KEY,
                         name VARCHAR(255) NOT NULL,
@@ -459,8 +468,8 @@ namespace PPTWebApp.Data
                     if (categoryId == 1)
                     {
                         string insertInventorySql = @"
-                    INSERT INTO productinventories (quantity, createdat)
-                    VALUES (@Quantity, @CreatedAt) RETURNING id";
+                            INSERT INTO productinventories (quantity, createdat)
+                            VALUES (@Quantity, @CreatedAt) RETURNING id";
 
                         using (var insertInventoryCommand = new NpgsqlCommand(insertInventorySql, connection))
                         {
@@ -471,9 +480,9 @@ namespace PPTWebApp.Data
                     }
 
                     string insertProductSql = @"
-                INSERT INTO products (name, description, sku, categoryid, inventoryid, price, imageurl, imagecompromise)
-                SELECT @Name, @Description, @SKU, @CategoryId, @InventoryId, @Price, @ImageUrl, @ImageCompromise
-                WHERE NOT EXISTS (SELECT 1 FROM products WHERE name = @Name)";
+                        INSERT INTO products (name, description, sku, categoryid, inventoryid, price, imageurl, imagecompromise)
+                        SELECT @Name, @Description, @SKU, @CategoryId, @InventoryId, @Price, @ImageUrl, @ImageCompromise
+                        WHERE NOT EXISTS (SELECT 1 FROM products WHERE name = @Name)";
 
                     using (var insertProductCommand = new NpgsqlCommand(insertProductSql, connection))
                     {
@@ -508,7 +517,6 @@ namespace PPTWebApp.Data
                 connection.Close();
             }
         }
-
 
 
         private async Task CreateUsersAndRoles()

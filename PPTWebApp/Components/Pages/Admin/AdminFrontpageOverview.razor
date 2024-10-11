@@ -2,9 +2,12 @@
 @using Microsoft.AspNetCore.Identity
 @using PPTWebApp.Components.Layout
 @using PPTWebApp.Data
+@using PPTWebApp.Data.Services
 @inject NavigationManager Navigation
 @inject UserManager<ApplicationUser> UserManager
 @inject AuthenticationStateProvider AuthenticationStateProvider
+@inject ProductService ProductService
+@inject HighlightService HighlightService
 @rendermode InteractiveServer
 
 <div class="frontpage-overview-scroll-container">
@@ -18,55 +21,40 @@
             <div class="highlight-section">
                 <h3>Highlight 1</h3>
                 <div class="form-group">
-                    <label for="highlight1">Select Item to Highlight:</label>
-                    <select id="highlight1" class="form-control" @onchange="(e) => OnHighlightSelectionChanged(e, 1)">
-                        <option value="">-- Select an Item --</option>
-                        @foreach (var item in Items)
-                        {
-                            <option value="@item">@item</option>
-                        }
-                    </select>
+                    <label for="highlight1">Enter Product ID to Highlight:</label>
+                    <input id="highlight1" type="text" class="form-control" @bind="highlight1Id" @bind:event="oninput" @onchange="() => OnHighlightIdChanged(highlight1Id, 1)" />
                 </div>
                 <div class="highlight-preview">
                     <p><strong>Preview:</strong> @selectedHighlight1</p>
+                    <p><strong>Status:</strong> @highlight1Status</p>
                 </div>
             </div>
 
             <div class="highlight-section">
                 <h3>Highlight 2</h3>
                 <div class="form-group">
-                    <label for="highlight2">Select Item to Highlight:</label>
-                    <select id="highlight2" class="form-control" @onchange="(e) => OnHighlightSelectionChanged(e, 2)">
-                        <option value="">-- Select an Item --</option>
-                        @foreach (var item in Items)
-                        {
-                            <option value="@item">@item</option>
-                        }
-                    </select>
+                    <label for="highlight2">Enter Product ID to Highlight:</label>
+                    <input id="highlight2" type="text" class="form-control" @bind="highlight2Id" @bind:event="oninput" @onchange="() => OnHighlightIdChanged(highlight2Id, 2)" />
                 </div>
                 <div class="highlight-preview">
                     <p><strong>Preview:</strong> @selectedHighlight2</p>
+                    <p><strong>Status:</strong> @highlight2Status</p>
                 </div>
             </div>
 
             <div class="highlight-section">
                 <h3>Highlight 3</h3>
                 <div class="form-group">
-                    <label for="highlight3">Select Item to Highlight:</label>
-                    <select id="highlight3" class="form-control" @onchange="(e) => OnHighlightSelectionChanged(e, 3)">
-                        <option value="">-- Select an Item --</option>
-                        @foreach (var item in Items)
-                        {
-                            <option value="@item">@item</option>
-                        }
-                    </select>
+                    <label for="highlight3">Enter Product ID to Highlight:</label>
+                    <input id="highlight3" type="text" class="form-control" @bind="highlight3Id" @bind:event="oninput" @onchange="() => OnHighlightIdChanged(highlight3Id, 3)" />
                 </div>
                 <div class="highlight-preview">
                     <p><strong>Preview:</strong> @selectedHighlight3</p>
+                    <p><strong>Status:</strong> @highlight3Status</p>
                 </div>
             </div>
 
-            <button class="btn btn-primary">Save Highlights</button>
+            <button class="btn btn-primary" @onclick="SaveHighlights">Save Highlights</button>
         </div>
     }
     else
@@ -78,11 +66,17 @@
 @code {
     private bool isAdmin = false;
 
-    private List<string> Items = new List<string> { "Product A", "Event B", "Blog Post C", "Service D" };
+    private string highlight1Id;
+    private string highlight2Id;
+    private string highlight3Id;
 
-    private string selectedHighlight1;
-    private string selectedHighlight2;
-    private string selectedHighlight3;
+    private string selectedHighlight1 = "No product selected";
+    private string selectedHighlight2 = "No product selected";
+    private string selectedHighlight3 = "No product selected";
+
+    private string highlight1Status;
+    private string highlight2Status;
+    private string highlight3Status;
 
     protected override async Task OnInitializedAsync()
     {
@@ -102,23 +96,152 @@
         {
             Navigation.NavigateTo("/");
         }
+
+        await LoadCurrentHighlights();
     }
 
-    private void OnHighlightSelectionChanged(ChangeEventArgs e, int highlightNumber)
+    private async Task LoadCurrentHighlights()
     {
-        var selectedValue = e.Value.ToString();
+        var highlights = HighlightService.GetHighlights().ToList();
 
+        highlight1Id = "";
+        highlight2Id = "";
+        highlight3Id = "";
+
+        selectedHighlight1 = "No product selected";
+        selectedHighlight2 = "No product selected";
+        selectedHighlight3 = "No product selected";
+
+        for (int i = 0; i < highlights.Count && i < 3; i++)
+        {
+            var highlight = highlights[i];
+            if (highlight != null)
+            {
+                switch (i)
+                {
+                    case 0:
+                        highlight1Id = highlight.Id.ToString();
+                        selectedHighlight1 = $"{highlight.Name} - ${highlight.Price}";
+                        break;
+                    case 1:
+                        highlight2Id = highlight.Id.ToString();
+                        selectedHighlight2 = $"{highlight.Name} - ${highlight.Price}";
+                        break;
+                    case 2:
+                        highlight3Id = highlight.Id.ToString();
+                        selectedHighlight3 = $"{highlight.Name} - ${highlight.Price}";
+                        break;
+                }
+            }
+        }
+
+        StateHasChanged();
+    }
+
+    private async Task LoadProductDetails(int productId, int highlightNumber)
+    {
+        try
+        {
+            var product = ProductService.GetProductById(productId);
+
+            if (product != null)
+            {
+                switch (highlightNumber)
+                {
+                    case 1:
+                        selectedHighlight1 = $"{product.Name} - ${product.Price}";
+                        break;
+                    case 2:
+                        selectedHighlight2 = $"{product.Name} - ${product.Price}";
+                        break;
+                    case 3:
+                        selectedHighlight3 = $"{product.Name} - ${product.Price}";
+                        break;
+                }
+            }
+            else
+            {
+                SetHighlightNotFoundMessage(highlightNumber);
+            }
+        }
+        catch (Exception)
+        {
+            SetHighlightNotFoundMessage(highlightNumber);
+        }
+
+        StateHasChanged();
+    }
+
+    private void SetHighlightNotFoundMessage(int highlightNumber)
+    {
         switch (highlightNumber)
         {
             case 1:
-                selectedHighlight1 = selectedValue;
+                selectedHighlight1 = "Product not found";
                 break;
             case 2:
-                selectedHighlight2 = selectedValue;
+                selectedHighlight2 = "Product not found";
                 break;
             case 3:
-                selectedHighlight3 = selectedValue;
+                selectedHighlight3 = "Product not found";
                 break;
         }
     }
+
+    private async void OnHighlightIdChanged(string productId, int highlightNumber)
+    {
+        if (int.TryParse(productId, out int id))
+        {
+            await LoadProductDetails(id, highlightNumber);
+        }
+        else
+        {
+            SetHighlightNotFoundMessage(highlightNumber);
+            StateHasChanged();
+        }
+    }
+
+    private async Task SaveHighlights()
+    {
+        highlight1Status = string.Empty;
+        highlight2Status = string.Empty;
+        highlight3Status = string.Empty;
+
+        if (int.TryParse(highlight1Id, out int productId1))
+        {
+            bool success = HighlightService.AddHighlight(productId1, 1);
+            highlight1Status = success ? "Successfully saved" : "Failed to save, reverted to old product";
+        }
+        else
+        {
+            HighlightService.RemoveHighlight(1);
+            highlight1Status = "Highlight removed";
+        }
+
+        if (int.TryParse(highlight2Id, out int productId2))
+        {
+            bool success = HighlightService.AddHighlight(productId2, 2);
+            highlight2Status = success ? "Successfully saved" : "Failed to save, reverted to old product";
+        }
+        else
+        {
+            HighlightService.RemoveHighlight(2);
+            highlight2Status = "Highlight removed";
+        }
+
+        if (int.TryParse(highlight3Id, out int productId3))
+        {
+            bool success = HighlightService.AddHighlight(productId3, 3);
+            highlight3Status = success ? "Successfully saved" : "Failed to save, reverted to old product";
+        }
+        else
+        {
+            HighlightService.RemoveHighlight(3);
+            highlight3Status = "Highlight removed";
+        }
+
+        await LoadCurrentHighlights();
+        StateHasChanged();
+    }
+
 }

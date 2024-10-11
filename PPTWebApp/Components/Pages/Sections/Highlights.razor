@@ -1,15 +1,15 @@
 ﻿@page "/products-grid"
 @using PPTWebApp.Data.Models
 @using PPTWebApp.Data.Services
-@inject ProductService ProductService
+@inject HighlightService HighlightService
 
 @code {
-    private List<Product> Products = new List<Product>();
+    private List<Product?> Products = new List<Product?>();
     private int maxProductsToDisplay = 3;
 
     protected override async Task OnInitializedAsync()
     {
-        Products = ProductService.GetHighlightedProducts(maxProductsToDisplay).ToList();
+        Products = HighlightService.GetHighlights().Take(maxProductsToDisplay).ToList();
     }
 }
 

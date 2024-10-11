@@ -11,6 +11,148 @@ namespace PPTWebApp.Data.Repositories
         {
             _connectionString = connectionString;
         }
+
+        public IEnumerable<Discount> GetAllDiscountsInRange(string? keyword, int startIndex, int range)
+        {
+            var discounts = new List<Discount>();
+
+            using (var connection = new NpgsqlConnection(_connectionString))
+            {
+                connection.Open();
+
+                string query = @"
+                    SELECT id, name, description, discountpercent, active
+                    FROM discounts"
+                            + (string.IsNullOrEmpty(keyword) ? "" : " WHERE name ILIKE '%' || @Keyword || '%'") +
+                            @" ORDER BY id 
+                    OFFSET @StartIndex LIMIT @Range";
+
+                using (var command = new NpgsqlCommand(query, connection))
+                {
+                    if (!string.IsNullOrEmpty(keyword))
+                    {
+                        command.Parameters.AddWithValue("@Keyword", keyword);
+                    }
+                    command.Parameters.AddWithValue("@StartIndex", startIndex);
+                    command.Parameters.AddWithValue("@Range", range);
+
+                    using (var reader = command.ExecuteReader())
+                    {
+                        while (reader.Read())
+                        {
+                            discounts.Add(new Discount
+                            {
+                                Id = reader.GetInt32(reader.GetOrdinal("id")),
+                                Name = reader.GetString(reader.GetOrdinal("name")),
+                                Description = reader.GetString(reader.GetOrdinal("description")),
+                                DiscountPercent = reader.GetDecimal(reader.GetOrdinal("discountpercent")),
+                                IsActive = reader.GetBoolean(reader.GetOrdinal("active"))
+                            });
+                        }
+                    }
+                }
+            }
+
+            return discounts;
+        }
+
+        public IEnumerable<Discount> GetAllDiscountsInRange(string? keyword, bool isActive, int startIndex, int range)
+        {
+            var discounts = new List<Discount>();
+
+            using (var connection = new NpgsqlConnection(_connectionString))
+            {
+                connection.Open();
+
+                string query = @"
+                    SELECT id, name, description, discountpercent, active
+                    FROM discounts
+                    WHERE active = @IsActive"
+                            + (string.IsNullOrEmpty(keyword) ? "" : " AND name ILIKE '%' || @Keyword || '%'") +
+                            @" ORDER BY id 
+                    OFFSET @StartIndex LIMIT @Range";
+
+                using (var command = new NpgsqlCommand(query, connection))
+                {
+                    command.Parameters.AddWithValue("@IsActive", isActive);
+
+                    if (!string.IsNullOrEmpty(keyword))
+                    {
+                        command.Parameters.AddWithValue("@Keyword", keyword);
+                    }
+
+                    command.Parameters.AddWithValue("@StartIndex", startIndex);
+                    command.Parameters.AddWithValue("@Range", range);
+
+                    using (var reader = command.ExecuteReader())
+                    {
+                        while (reader.Read())
+                        {
+                            discounts.Add(new Discount
+                            {
+                                Id = reader.GetInt32(reader.GetOrdinal("id")),
+                                Name = reader.GetString(reader.GetOrdinal("name")),
+                                Description = reader.GetString(reader.GetOrdinal("description")),
+                                DiscountPercent = reader.GetDecimal(reader.GetOrdinal("discountpercent")),
+                                IsActive = reader.GetBoolean(reader.GetOrdinal("active"))
+                            });
+                        }
+                    }
+                }
+            }
+
+            return discounts;
+        }
+
+        public int GetDiscountCount(string? keyword)
+        {
+            string query = @"
+                SELECT COUNT(*)
+                FROM discounts"
+                + (string.IsNullOrEmpty(keyword) ? "" : " WHERE name ILIKE '%' || @Keyword || '%'");
+
+            using (var connection = new NpgsqlConnection(_connectionString))
+            {
+                connection.Open();
+
+                using (var command = new NpgsqlCommand(query, connection))
+                {
+                    if (!string.IsNullOrEmpty(keyword))
+                    {
+                        command.Parameters.AddWithValue("@Keyword", keyword);
+                    }
+
+                    return Convert.ToInt32(command.ExecuteScalar());
+                }
+            }
+        }
+
+        public int GetDiscountCount(string? keyword, bool isActive)
+        {
+            string query = @"
+                SELECT COUNT(*)
+                FROM discounts
+                WHERE active = @IsActive"
+                + (string.IsNullOrEmpty(keyword) ? "" : " AND name ILIKE '%' || @Keyword || '%'");
+
+            using (var connection = new NpgsqlConnection(_connectionString))
+            {
+                connection.Open();
+
+                using (var command = new NpgsqlCommand(query, connection))
+                {
+                    command.Parameters.AddWithValue("@IsActive", isActive);
+
+                    if (!string.IsNullOrEmpty(keyword))
+                    {
+                        command.Parameters.AddWithValue("@Keyword", keyword);
+                    }
+
+                    return Convert.ToInt32(command.ExecuteScalar());
+                }
+            }
+        }
+
         public int AddDiscount(Discount discount)
         {
             if (discount == null) throw new ArgumentNullException(nameof(discount), "Discount cannot be null.");

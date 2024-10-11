@@ -5,6 +5,7 @@ using PPTWebApp.Components;
 using PPTWebApp.Components.Account;
 using PPTWebApp.Data;
 using PPTWebApp.Data.Repositories;
+using PPTWebApp.Data.Repositories.Interfaces;
 using PPTWebApp.Data.Services;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -56,9 +57,14 @@ builder.Services.AddScoped<IPostRepository>(provider => new PostRepository(conne
 builder.Services.AddScoped<PostService>();
 builder.Services.AddScoped<IProductRepository>(provider => new ProductRepository(connectionString));
 builder.Services.AddScoped<ProductService>();
+builder.Services.AddScoped<IProductRepository>(provider => new ProductRepository(connectionString));
+builder.Services.AddScoped<IHighlightRepository>(provider => new HighlightRepository(connectionString, provider.GetRequiredService<IProductRepository>()));
+builder.Services.AddScoped<HighlightService>();
 builder.Services.AddScoped<BasketService>();
 builder.Services.AddScoped<IProductCategoryRepository>(provider => new ProductCategoryRepository(connectionString));
 builder.Services.AddScoped<ProductCategoryService>();
+builder.Services.AddScoped<IDiscountRepository>(provider => new DiscountRepository(connectionString));
+builder.Services.AddScoped<DiscountService>();
 
 builder.WebHost.UseStaticWebAssets();
 

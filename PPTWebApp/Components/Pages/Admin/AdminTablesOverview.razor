@@ -8,6 +8,8 @@
 @inject AuthenticationStateProvider AuthenticationStateProvider
 @inject ProductService ProductService
 @inject PostService PostService
+@inject DiscountService DiscountService
+@inject ProductCategoryService ProductCategoryService
 @inject ApplicationUserService ApplicationUserService
 @inject IJSRuntime JS
 @rendermode InteractiveServer
@@ -82,7 +84,7 @@
 
 @code {
     private bool isAdmin = false;
-    private List<string> Tables = new List<string> { "Posts", "Products", "Users" };
+    private List<string> Tables = new List<string> { "Posts", "Products", "Users", "Product Categories", "Discounts" };
     private string SelectedTable;
     private List<string> TableHeaders = new List<string>();
     private List<Dictionary<string, object>> PaginatedEntities = new List<Dictionary<string, object>>();
@@ -121,57 +123,97 @@
 
     private async Task LoadTableDataAsync()
     {
-        if (SelectedTable == "Posts")
+        switch (SelectedTable)
         {
-            TableHeaders = new List<string> { "ID", "Title", "Date Posted" };
-            SetTotalItems();
-            var posts = PostService.GetPostsInRange(SearchQuery, PageIndex * PageSize, PageSize);
-            PaginatedEntities = posts.Select(post => new Dictionary<string, object>
-            {
-                { "ID", post.Id },
-                { "Title", post.Title },
-                { "Date Posted", post.DatePosted.ToString("yyyy-MM-dd") }
-            }).ToList();
-        }
-        else if (SelectedTable == "Products")
-        {
-            TableHeaders = new List<string> { "ID", "Product Name", "Price" };
-            SetTotalItems();
-            var products = ProductService.SearchProducts(null, SearchQuery, 0, 1000000000, PageIndex * PageSize, PageSize);
-            PaginatedEntities = products.Select(product => new Dictionary<string, object>
-            {
-                { "ID", product.Id },
-                { "Product Name", product.Name },
-                { "Price", product.Price }
-            }).ToList();
-        }
-        else if (SelectedTable == "Users")
-        {
-            TableHeaders = new List<string> { "ID", "Username", "Email" };
-            TotalItems = await ApplicationUserService.GetTotalUserCountAsync(SearchQuery, null, CancellationToken.None);
-            var users = await ApplicationUserService.SearchUsersAsync(SearchQuery, null, PageIndex * PageSize, PageSize, CancellationToken.None);
-            PaginatedEntities = users.Select(user => new Dictionary<string, object>
-            {
-                { "ID", user.Id },
-                { "Username", user.UserName },
-                { "Email", user.Email }
-            }).ToList();
+            case "Posts":
+                TableHeaders = new List<string> { "ID", "Title", "Date Posted" };
+                SetTotalItems();
+                var posts = PostService.GetPostsInRange(SearchQuery, PageIndex * PageSize, PageSize);
+                PaginatedEntities = posts.Select(post => new Dictionary<string, object>
+                {
+                    { "ID", post.Id },
+                    { "Title", post.Title },
+                    { "Date Posted", post.DatePosted.ToString("yyyy-MM-dd") }
+                }).ToList();
+                break;
 
-            StateHasChanged();
+            case "Products":
+                TableHeaders = new List<string> { "ID", "Product Name", "Price", "Discount Active", "Inventory Quantity" };
+                SetTotalItems();
+                var products = ProductService.SearchProducts(null, SearchQuery, 0, 1000000000, PageIndex * PageSize, PageSize);
+                PaginatedEntities = products.Select(product => new Dictionary<string, object>
+                {
+                    { "ID", product.Id },
+                    { "Product Name", product.Name },
+                    { "Price", product.Price },
+                    { "Discount Active", product.Discount != null && product.Discount.IsActive ? "Yes" : "No" },
+                    { "Inventory Quantity", product.ProductInventory == null ? "N/A" : product.ProductInventory.Quantity }
+                }).ToList();
+                break;
+
+            case "Users":
+                TableHeaders = new List<string> { "ID", "Username", "Email" };
+                TotalItems = await ApplicationUserService.GetTotalUserCountAsync(SearchQuery, null, CancellationToken.None);
+                var users = await ApplicationUserService.SearchUsersAsync(SearchQuery, null, PageIndex * PageSize, PageSize, CancellationToken.None);
+                PaginatedEntities = users.Select(user => new Dictionary<string, object>
+                {
+                    { "ID", user.Id },
+                    { "Username", user.UserName },
+                    { "Email", user.Email == null ? "N/A" : user.Email }
+                }).ToList();
+                break;
+
+            case "Product Categories":
+                TableHeaders = new List<string> { "ID", "Category Name", "Description" };
+                var categories = ProductCategoryService.GetAllCategories();
+                PaginatedEntities = categories.Select(category => new Dictionary<string, object>
+                {
+                    { "ID", category.Id },
+                    { "Category Name", category.Name },
+                    { "Description", category.Description }
+                }).ToList();
+                break;
+
+            case "Discounts":
+                TableHeaders = new List<string> { "ID", "Name", "Description", "Discount Percent", "Active" };
+                SetTotalItems();
+                var discounts = DiscountService.GetAllDiscountsInRange(SearchQuery, PageIndex * PageSize, PageSize);
+                PaginatedEntities = discounts.Select(discount => new Dictionary<string, object>
+                {
+                    { "ID", discount.Id },
+                    { "Name", discount.Name },
+                    { "Description", discount.Description },
+                    { "Discount Percent", discount.DiscountPercent },
+                    { "Active", discount.IsActive ? "Yes" : "No" }
+                }).ToList();
+                break;
+
+            default:
+                PaginatedEntities.Clear();
+                TableHeaders.Clear();
+                break;
         }
+
+        StateHasChanged();
     }
 
     private void SetTotalItems()
+{
+    if (SelectedTable == "Posts")
     {
-        if (SelectedTable == "Posts")
-        {
-            TotalItems = PostService.GetTotalPostCount(SearchQuery);
-        }
-        else if (SelectedTable == "Products")
-        {
-            TotalItems = ProductService.GetTotalProductCount(null, SearchQuery, 0, 1000000000);
-        }
+        TotalItems = PostService.GetTotalPostCount(SearchQuery);
     }
+    else if (SelectedTable == "Products")
+    {
+        TotalItems = ProductService.GetTotalProductCount(null, SearchQuery, 0, 1000000000);
+    }
+    else if (SelectedTable == "Discounts")
+    {
+        TotalItems = DiscountService.GetDiscountCount(SearchQuery);
+    }
+}
+
+
 
     private void OnSearchChanged(ChangeEventArgs e)
     {
