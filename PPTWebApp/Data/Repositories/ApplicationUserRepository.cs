@@ -1,11 +1,5 @@
 ﻿using Npgsql;
-using PPTWebApp.Data.Models;
-using System;
-using System.Collections.Generic;
 using System.Data;
-using System.Threading;
-using System.Threading.Tasks;
-using Microsoft.AspNetCore.Identity;
 using PPTWebApp.Data;
 
 public class ApplicationUserRepository : IApplicationUserRepository

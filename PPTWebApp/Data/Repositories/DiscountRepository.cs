@@ -1,5 +1,6 @@
 ﻿using Npgsql;
 using PPTWebApp.Data.Models;
+using PPTWebApp.Data.Repositories.Interfaces;
 
 namespace PPTWebApp.Data.Repositories
 {

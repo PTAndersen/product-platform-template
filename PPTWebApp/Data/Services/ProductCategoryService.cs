@@ -1,5 +1,5 @@
 ﻿using PPTWebApp.Data.Models;
-using PPTWebApp.Data.Repositories;
+using PPTWebApp.Data.Repositories.Interfaces;
 
 namespace PPTWebApp.Data.Services
 {

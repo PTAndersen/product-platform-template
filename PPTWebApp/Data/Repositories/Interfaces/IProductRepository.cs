@@ -1,6 +1,6 @@
 ﻿using PPTWebApp.Data.Models;
 
-namespace PPTWebApp.Data.Repositories
+namespace PPTWebApp.Data.Repositories.Interfaces
 {
     public interface IProductRepository
     {
