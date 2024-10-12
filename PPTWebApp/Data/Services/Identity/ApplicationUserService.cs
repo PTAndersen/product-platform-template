@@ -1,5 +1,5 @@
 ﻿using Microsoft.AspNetCore.Identity;
-using PPTWebApp.Data;
+using PPTWebApp.Data.Models;
 using System.Threading;
 using System.Threading.Tasks;
 

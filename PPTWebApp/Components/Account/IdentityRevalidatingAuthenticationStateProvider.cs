@@ -2,7 +2,7 @@ using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Components.Server;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Options;
-using PPTWebApp.Data;
+using PPTWebApp.Data.Models;
 using System.Security.Claims;
 
 namespace PPTWebApp.Components.Account

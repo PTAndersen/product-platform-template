@@ -1,4 +1,4 @@
-﻿using PPTWebApp.Data;
+﻿using PPTWebApp.Data.Models;
 
 public interface IApplicationUserRepository
 {

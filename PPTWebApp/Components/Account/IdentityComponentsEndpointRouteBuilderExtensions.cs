@@ -6,7 +6,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Primitives;
 using PPTWebApp.Components.Account.Pages;
 using PPTWebApp.Components.Account.Pages.Manage;
-using PPTWebApp.Data;
+using PPTWebApp.Data.Models;
 using System.Security.Claims;
 using System.Text.Json;
 

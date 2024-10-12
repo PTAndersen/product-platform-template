@@ -1,6 +1,6 @@
 ﻿using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
-using PPTWebApp.Data;
+using PPTWebApp.Data.Models;
 
 namespace PPTWebApp.Controllers;
 [Route("account")]

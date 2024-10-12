@@ -1,6 +1,6 @@
 ﻿using Npgsql;
 using System.Data;
-using PPTWebApp.Data;
+using PPTWebApp.Data.Models;
 
 public class ApplicationUserRepository : IApplicationUserRepository
 {

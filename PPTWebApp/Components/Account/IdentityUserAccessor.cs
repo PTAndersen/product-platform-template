@@ -1,5 +1,5 @@
 using Microsoft.AspNetCore.Identity;
-using PPTWebApp.Data;
+using PPTWebApp.Data.Models;
 
 namespace PPTWebApp.Components.Account
 {

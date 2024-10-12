@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Identity;
 using PPTWebApp.Components;
 using PPTWebApp.Components.Account;
 using PPTWebApp.Data;
+using PPTWebApp.Data.Models;
 using PPTWebApp.Data.Repositories;
 using PPTWebApp.Data.Repositories.Interfaces;
 using PPTWebApp.Data.Services;

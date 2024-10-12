@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Identity;
 using Npgsql;
+using PPTWebApp.Data.Models;
 
 namespace PPTWebApp.Data
 {

@@ -1,6 +1,6 @@
 ﻿using Microsoft.AspNetCore.Identity;
 
-namespace PPTWebApp.Data
+namespace PPTWebApp.Data.Models
 {
     public class ApplicationUser : IdentityUser
     {
