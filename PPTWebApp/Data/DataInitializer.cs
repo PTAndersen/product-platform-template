@@ -181,50 +181,52 @@ namespace PPTWebApp.Data
                     );
 
                     CREATE TABLE IF NOT EXISTS userprofiles (
-                        id SERIAL PRIMARY KEY,
-                        username VARCHAR(255) NOT NULL,
-                        password TEXT NOT NULL,
+                        userid UUID PRIMARY KEY,
                         firstname VARCHAR(255),
                         lastname VARCHAR(255),
                         telephone VARCHAR(20),
                         createdat TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-                        modifiedat TIMESTAMP
+                        modifiedat TIMESTAMP,
+                        CONSTRAINT fk_userprofiles_aspnetusers FOREIGN KEY (userid) REFERENCES aspnetusers(id) ON DELETE CASCADE
                     );
 
                     CREATE TABLE IF NOT EXISTS useractivity (
-                        userid UUID NOT NULL,
+                        userid UUID PRIMARY KEY,
                         lastactivityat TIMESTAMP NOT NULL,
-                        PRIMARY KEY (userid)
+                        CONSTRAINT fk_useractivity_aspnetusers FOREIGN KEY (userid) REFERENCES aspnetusers(id) ON DELETE CASCADE
                     );
 
                     CREATE TABLE IF NOT EXISTS useraddresses (
                         id SERIAL PRIMARY KEY,
-                        userid INT REFERENCES userprofiles(id) ON DELETE CASCADE,
+                        userid UUID NOT NULL,
                         addressline1 VARCHAR(255) NOT NULL,
                         addressline2 VARCHAR(255),
                         city VARCHAR(100),
                         postalcode VARCHAR(20),
                         county VARCHAR(100),
                         telephone VARCHAR(20),
-                        mobile VARCHAR(20)
+                        mobile VARCHAR(20),
+                        CONSTRAINT fk_useraddresses_aspnetusers FOREIGN KEY (userid) REFERENCES aspnetusers (id) ON DELETE CASCADE
                     );
 
                     CREATE TABLE IF NOT EXISTS userpayments (
                         id SERIAL PRIMARY KEY,
-                        userid INT REFERENCES userprofiles(id) ON DELETE CASCADE,
+                        userid UUID NOT NULL,
                         paymenttype VARCHAR(50),
                         provider VARCHAR(255),
                         accountno VARCHAR(50),
-                        expiry DATE
+                        expiry DATE,
+                        CONSTRAINT fk_userpayments_aspnetusers FOREIGN KEY (userid) REFERENCES aspnetusers (id) ON DELETE CASCADE
                     );
 
                     CREATE TABLE IF NOT EXISTS orderdetails (
                         id SERIAL PRIMARY KEY,
-                        userid INT REFERENCES userprofiles(id) ON DELETE SET NULL,
+                        userid UUID NOT NULL,
                         total DECIMAL(10, 2) NOT NULL,
                         paymentid INT REFERENCES userpayments(id) ON DELETE SET NULL,
                         createdat TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-                        modifiedat TIMESTAMP
+                        modifiedat TIMESTAMP,
+                        CONSTRAINT fk_orderdetails_aspnetusers FOREIGN KEY (userid) REFERENCES aspnetusers (id) ON DELETE SET NULL
                     );
 
                     CREATE TABLE IF NOT EXISTS orderitems (
@@ -246,6 +248,7 @@ namespace PPTWebApp.Data
                         modifiedat TIMESTAMP
                     );
                 ";
+
 
                 using (var createCommand = new NpgsqlCommand(createTablesSql, connection))
                 {

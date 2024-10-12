@@ -22,6 +22,11 @@ namespace PPTWebApp.Data.Services
             return _visitorSessionRepository.GetSessionById(sessionId);
         }
 
+        public Task<List<int>> GetDailyVisitorCountsAsync(int daysBack)
+        {
+            return _visitorSessionRepository.GetDailyVisitorCountsAsync(daysBack);
+        }
+
         public bool IsSessionValid(Guid sessionId)
         {
             return _visitorSessionRepository.IsSessionValid(sessionId);

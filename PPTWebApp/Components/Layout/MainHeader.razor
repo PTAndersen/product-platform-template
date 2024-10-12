@@ -122,7 +122,6 @@
     private bool isAdmin = false;
     private string userName = "";
     private string email = "";
-    private bool isFirstRender = true;
 
     protected override async Task OnInitializedAsync()
     {
@@ -153,9 +152,8 @@
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        if (firstRender && isFirstRender)
+        if (firstRender)
         {
-            isFirstRender = false;
             NavigationManager.LocationChanged += async (sender, args) => await TrackActivityAndSessionAsync();
             await TrackActivityAndSessionAsync();
         }
@@ -191,6 +189,7 @@
         await Task.Run(() => VisitorPageViewService.LogPageView(validSessionId, pageUrl, referrer));
     }
 
+
     private async Task TrackUserActivityAsync()
     {
         var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
@@ -202,9 +201,20 @@
 
             if (userIdClaim != null && Guid.TryParse(userIdClaim.Value, out Guid userId))
             {
-                await Task.Run(() => UserActivityService.UpdateUserActivity(userId));
+                var success = await Task.Run(() => UserActivityService.UpdateUserActivity(userId));
+
+                if (!success)
+                {
+                    await HandleFailedUserActivityUpdate();
+                }
             }
         }
+    }
+
+    private async Task HandleFailedUserActivityUpdate()
+    {
+        await JSRuntime.InvokeVoidAsync("localStorage.removeItem", "userSessionId");
+        NavigationManager.NavigateTo("/account/login");
     }
 
     private void IncreaseQuantity(BasketItem item)

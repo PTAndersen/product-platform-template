@@ -72,5 +72,10 @@ namespace PPTWebApp.Data.Services
         {
             _productRepository.DeleteProduct(id);
         }
+
+        public async Task<List<(int Sales, Product Product)>> GetTopSellingProductsAsync(int topProductsCount)
+        {
+            return await _productRepository.GetTopSellingProductsAsync(topProductsCount);
+        }
     }
 }

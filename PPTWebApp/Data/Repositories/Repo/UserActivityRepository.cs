@@ -13,11 +13,24 @@ namespace PPTWebApp.Data.Repositories
             _connectionString = connectionString ?? throw new ArgumentNullException(nameof(connectionString));
         }
 
-        public void UpdateUserActivity(Guid userId)
+        public bool UpdateUserActivity(Guid userId)
         {
             using (var connection = new NpgsqlConnection(_connectionString))
             {
                 connection.Open();
+
+                string checkUserQuery = "SELECT COUNT(1) FROM aspnetusers WHERE id = @UserId";
+                using (var checkCommand = new NpgsqlCommand(checkUserQuery, connection))
+                {
+                    checkCommand.Parameters.AddWithValue("@UserId", userId);
+                    var userExists = (long)checkCommand.ExecuteScalar();
+
+                    if (userExists == 0)
+                    {
+                        return false;
+                    }
+                }
+
                 string query = @"
                     INSERT INTO useractivity (userid, lastactivityat) 
                     VALUES (@UserId, @LastActivityAt)
@@ -31,9 +44,10 @@ namespace PPTWebApp.Data.Repositories
 
                     command.ExecuteNonQuery();
                 }
+
+                return true;
             }
         }
-
 
         public UserActivity? GetLastActivity(int userId)
         {

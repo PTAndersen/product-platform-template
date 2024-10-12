@@ -7,5 +7,6 @@ namespace PPTWebApp.Data.Repositories.Interfaces
         void CreateSession(Guid sessionId);
         VisitorSession? GetSessionById(Guid sessionId);
         bool IsSessionValid(Guid sessionId);
+        Task<List<int>> GetDailyVisitorCountsAsync(int daysBack);
     }
 }

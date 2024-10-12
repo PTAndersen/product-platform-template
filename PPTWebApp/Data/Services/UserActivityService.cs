@@ -12,9 +12,9 @@ namespace PPTWebApp.Data.Services
             _userActivityRepository = userActivityRepository ?? throw new ArgumentNullException(nameof(userActivityRepository));
         }
 
-        public void UpdateUserActivity(Guid userId)
+        public bool UpdateUserActivity(Guid userId)
         {
-            _userActivityRepository.UpdateUserActivity(userId);
+            return _userActivityRepository.UpdateUserActivity(userId);
         }
 
         public UserActivity? GetLastActivity(int userId)

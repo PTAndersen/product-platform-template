@@ -220,6 +220,11 @@ public class ApplicationUserService : IUserStore<ApplicationUser>, IUserPassword
         }
     }
 
+    public Task<List<int>> GetDailyUserRegistrationsAsync(int daysBack)
+    {
+        return _applicationUserRepository.GetDailyUserRegistrationsAsync(daysBack);
+    }
+
     public void Dispose()
     {
         // Clean up resources if necessary

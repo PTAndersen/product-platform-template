@@ -27,5 +27,8 @@ namespace PPTWebApp.Data.Repositories
         IEnumerable<Product> GetTopDiscountedProducts(ProductCategory? productCategory, decimal minPrice, decimal maxPrice, int startIndex, int range);
 
         IEnumerable<Product> SearchProducts(ProductCategory? productCategory, string keyword, decimal minPrice, decimal maxPrice, int startIndex, int range);
+
+        Task<List<(int Sales, Product Product)>> GetTopSellingProductsAsync(int topProductsCount);
+
     }
 }

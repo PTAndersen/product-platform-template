@@ -1,9 +1,15 @@
 ﻿@using Microsoft.AspNetCore.Identity
 @using PPTWebApp.Components.Layout
 @using PPTWebApp.Data
+@using PPTWebApp.Data.Models
+@using PPTWebApp.Data.Services
 @inject NavigationManager Navigation
 @inject UserManager<ApplicationUser> UserManager
 @inject AuthenticationStateProvider AuthenticationStateProvider
+@inject VisitorSessionService VisitorSessionService
+@inject OrderService OrderService
+@inject ProductService ProductService
+@inject ApplicationUserService ApplicationUserService
 @inject IJSRuntime JS
 @rendermode InteractiveServer
 
@@ -35,15 +41,6 @@
                 <div class="col-md-6">
                     <div class="card">
                         <div class="card-body">
-                            <h5 class="card-title">Conversion Rate</h5>
-                            <canvas id="conversionRateChart"></canvas>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="col-md-6">
-                    <div class="card">
-                        <div class="card-body">
                             <h5 class="card-title">User Registrations</h5>
                             <canvas id="userRegistrationsChart"></canvas>
                         </div>
@@ -58,33 +55,6 @@
                         </div>
                     </div>
                 </div>
-
-                <div class="col-md-6">
-                    <div class="card">
-                        <div class="card-body">
-                            <h5 class="card-title">Active Users</h5>
-                            <canvas id="activeUsersChart"></canvas>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="col-md-6">
-                    <div class="card">
-                        <div class="card-body">
-                            <h5 class="card-title">Revenue Breakdown</h5>
-                            <canvas id="revenueBreakdownChart"></canvas>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="col-md-6">
-                    <div class="card">
-                        <div class="card-body">
-                            <h5 class="card-title">Sales by Region</h5>
-                            <canvas id="salesByRegionChart"></canvas>
-                        </div>
-                    </div>
-                </div>
             </div>
         </div>
     }
@@ -96,6 +66,10 @@
 
 @code {
     private bool isAdmin = false;
+    private List<int> dailyVisitorsCounts = new List<int>();
+    private List<decimal> dailySales = new List<decimal>();
+    private List<int> dailyRegistrations = new List<int>();
+    private List<(int Sales, Product Product)> topSellingProducts = new List<(int Sales, Product Product)>();
 
     protected override async Task OnInitializedAsync()
     {
@@ -121,159 +95,113 @@
     {
         if (firstRender && isAdmin)
         {
+            await LoadDailyVisitors();
+            await LoadDailySales();
+            await LoadDailyRegistrations();
+            await LoadTopSellingProducts();
             await InitializeCharts();
         }
     }
 
+
+
+    private async Task LoadDailyVisitors()
+    {
+        dailyVisitorsCounts = await VisitorSessionService.GetDailyVisitorCountsAsync(7);
+    }
+
+    private async Task LoadDailySales()
+    {
+        dailySales = await OrderService.GetDailySalesAsync(7);
+    }
+
+    private async Task LoadDailyRegistrations()
+    {
+        dailyRegistrations = await ApplicationUserService.GetDailyUserRegistrationsAsync(7);
+    }
+
+    private async Task LoadTopSellingProducts()
+    {
+        topSellingProducts = await ProductService.GetTopSellingProductsAsync(5);
+    }
+
     private async Task InitializeCharts()
     {
-        // Daily Visitors Chart
-        var dailyVisitorsData = new
-        {
-            labels = new[] { "Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun" },
-            datasets = new[]
-            {
-            new {
-                label = "Visitors",
-                backgroundColor = "rgba(75, 192, 192, 0.2)",
-                borderColor = "rgba(75, 192, 192, 1)",
-                borderWidth = 1,
-                data = new[] { 120, 150, 180, 200, 250, 300, 220 }
-            }
-        }
-        };
-        await JS.InvokeVoidAsync("createChart", "dailyVisitorsChart", "bar", dailyVisitorsData, GetDefaultOptions());
+        var dateLabels = Enumerable.Range(0, 7)
+            .Select(i => DateTime.Now.AddDays(-i).ToString("ddd"))
+            .Reverse()
+            .ToArray();
 
-        // Sales Overview (Daily, Weekly, Monthly)
-        var salesOverviewData = new
+        var dailyVisitorsChartData = new
         {
-            labels = new[] { "Week 1", "Week 2", "Week 3", "Week 4" },
-            datasets = new[]
-            {
-            new {
-                label = "Daily Sales",
-                backgroundColor = "rgba(255, 99, 132, 0.2)",
-                borderColor = "rgba(255, 99, 132, 1)",
-                data = new[] { 500, 600, 800, 700 }
-            },
-            new {
-                label = "Weekly Sales",
-                backgroundColor = "rgba(54, 162, 235, 0.2)",
-                borderColor = "rgba(54, 162, 235, 1)",
-                data = new[] { 1500, 1700, 2000, 1800 }
-            },
-            new {
-                label = "Monthly Sales",
-                backgroundColor = "rgba(255, 206, 86, 0.2)",
-                borderColor = "rgba(255, 206, 86, 1)",
-                data = new[] { 6000, 7000, 7500, 7200 }
-            }
-        }
-        };
-        await JS.InvokeVoidAsync("createChart", "salesOverviewChart", "line", salesOverviewData, GetDefaultOptions());
-
-        // Conversion Rate Chart
-        var conversionRateData = new
-        {
-            labels = new[] { "Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun" },
-            datasets = new[]
-            {
-            new {
-                label = "Conversion Rate (%)",
-                backgroundColor = "rgba(153, 102, 255, 0.2)",
-                borderColor = "rgba(153, 102, 255, 1)",
-                borderWidth = 1,
-                data = new[] { 1.5, 2.0, 1.8, 2.2, 1.9, 2.5, 2.3 }
-            }
-        }
-        };
-        await JS.InvokeVoidAsync("createChart", "conversionRateChart", "bar", conversionRateData, GetDefaultOptions());
-
-        // User Registrations Chart
-        var userRegistrationsData = new
-        {
-            labels = new[] { "Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun" },
-            datasets = new[]
-            {
-            new {
-                label = "User Registrations",
-                backgroundColor = "rgba(255, 159, 64, 0.2)",
-                borderColor = "rgba(255, 159, 64, 1)",
-                borderWidth = 1,
-                data = new[] { 30, 50, 40, 70, 60, 90, 100 }
-            }
-        }
-        };
-        await JS.InvokeVoidAsync("createChart", "userRegistrationsChart", "bar", userRegistrationsData, GetDefaultOptions());
-
-        // Top Selling Products Chart
-        var topSellingProductsData = new
-        {
-            labels = new[] { "Product A", "Product B", "Product C", "Product D", "Product E" },
-            datasets = new[]
-            {
-            new {
-                label = "Units Sold",
-                backgroundColor = "rgba(75, 192, 192, 0.2)",
-                borderColor = "rgba(75, 192, 192, 1)",
-                borderWidth = 1,
-                data = new[] { 100, 200, 150, 300, 250 }
-            }
-        }
-        };
-        await JS.InvokeVoidAsync("createChart", "topSellingProductsChart", "bar", topSellingProductsData, GetDefaultOptions());
-
-        // Active Users Chart
-        var activeUsersData = new
-        {
-            labels = new[] { "Hour 1", "Hour 2", "Hour 3", "Hour 4", "Hour 5", "Hour 6", "Hour 7" },
+            labels = dateLabels,
             datasets = new[]
             {
                 new {
-                    label = "Active Users",
-                    backgroundColor = "rgba(54, 162, 235, 0.2)",
-                    borderColor = "rgba(54, 162, 235, 1)",
+                    label = "Visitors",
+                    backgroundColor = "rgba(75, 192, 192, 0.2)",
+                    borderColor = "rgba(75, 192, 192, 1)",
                     borderWidth = 1,
-                    data = new[] { 10, 20, 15, 25, 30, 28, 35 }
+                    data = dailyVisitorsCounts.ToArray()
                 }
             }
         };
-        await JS.InvokeVoidAsync("createChart", "activeUsersChart", "line", activeUsersData, GetDefaultOptions());
 
+        await JS.InvokeVoidAsync("createChart", "dailyVisitorsChart", "bar", dailyVisitorsChartData, GetDefaultOptions());
 
-        // Revenue Breakdown Chart
-        var revenueBreakdownData = new
+        var salesChartData = new
         {
-            labels = new[] { "Online Sales", "Retail Sales", "Wholesale" },
+            labels = dateLabels,
             datasets = new[]
             {
-            new {
-                label = "Revenue",
-                backgroundColor = new[] { "rgba(255, 99, 132, 0.2)", "rgba(54, 162, 235, 0.2)", "rgba(75, 192, 192, 0.2)" },
-                borderColor = new[] { "rgba(255, 99, 132, 1)", "rgba(54, 162, 235, 1)", "rgba(75, 192, 192, 1)" },
-                borderWidth = 1,
-                data = new[] { 10000, 15000, 8000 }
+                new {
+                    label = "Daily Sales",
+                    backgroundColor = "rgba(255, 99, 132, 0.2)",
+                    borderColor = "rgba(255, 99, 132, 1)",
+                    borderWidth = 1,
+                    data = dailySales.ToArray()
+                }
             }
-        }
         };
-        await JS.InvokeVoidAsync("createChart", "revenueBreakdownChart", "pie", revenueBreakdownData, GetDefaultOptions());
 
-        // Sales by Region Chart
-        var salesByRegionData = new
+        await JS.InvokeVoidAsync("createChart", "salesOverviewChart", "bar", salesChartData, GetDefaultOptions());
+
+        var userRegistrationsChartData = new
         {
-            labels = new[] { "North America", "Europe", "Asia", "Australia" },
+            labels = dateLabels,
             datasets = new[]
             {
-            new {
-                label = "Sales by Region",
-                backgroundColor = new[] { "rgba(255, 206, 86, 0.2)", "rgba(75, 192, 192, 0.2)", "rgba(54, 162, 235, 0.2)", "rgba(153, 102, 255, 0.2)" },
-                borderColor = new[] { "rgba(255, 206, 86, 1)", "rgba(75, 192, 192, 1)", "rgba(54, 162, 235, 1)", "rgba(153, 102, 255, 1)" },
-                borderWidth = 1,
-                data = new[] { 4000, 5000, 3000, 2000 }
+                new {
+                    label = "User Registrations",
+                    backgroundColor = "rgba(255, 159, 64, 0.2)",
+                    borderColor = "rgba(255, 159, 64, 1)",
+                    borderWidth = 1,
+                    data = dailyRegistrations.ToArray()
+                }
             }
-        }
         };
-        await JS.InvokeVoidAsync("createChart", "salesByRegionChart", "doughnut", salesByRegionData, GetDefaultOptions());
+
+        await JS.InvokeVoidAsync("createChart", "userRegistrationsChart", "bar", userRegistrationsChartData, GetDefaultOptions());
+
+        var saleLabels = topSellingProducts.Select(p => p.Product.Name).ToArray();
+        var salesData = topSellingProducts.Select(p => p.Sales).ToArray();
+
+        var topSellingProductsChartData = new
+        {
+            labels = saleLabels,
+            datasets = new[]
+            {
+                    new {
+                        label = "Units Sold",
+                        backgroundColor = "rgba(75, 192, 192, 0.2)",
+                        borderColor = "rgba(75, 192, 192, 1)",
+                        borderWidth = 1,
+                        data = salesData
+                    }
+                }
+        };
+
+        await JS.InvokeVoidAsync("createChart", "topSellingProductsChart", "bar", topSellingProductsChartData, GetDefaultOptions());
     }
 
     private object GetDefaultOptions() => new

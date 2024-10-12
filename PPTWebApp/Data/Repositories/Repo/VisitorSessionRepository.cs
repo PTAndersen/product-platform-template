@@ -31,6 +31,49 @@ namespace PPTWebApp.Data.Repositories
             }
         }
 
+        public async Task<List<int>> GetDailyVisitorCountsAsync(int daysBack)
+        {
+            var dailyVisitorCounts = new List<int>();
+
+            using (var connection = new NpgsqlConnection(_connectionString))
+            {
+                await connection.OpenAsync();
+
+                string query = @"
+                    WITH date_series AS (
+                        SELECT 
+                            CURRENT_DATE - INTERVAL '1 day' * generate_series(0, @DaysBack - 1) AS day
+                    )
+                    SELECT 
+                        day, 
+                        COALESCE(COUNT(v.sessionid), 0) AS visitor_count
+                    FROM 
+                        date_series d
+                    LEFT JOIN 
+                        visitorsessions v ON d.day = v.startedat::date
+                    GROUP BY 
+                        day
+                    ORDER BY 
+                        day ASC";
+
+                using (var command = new NpgsqlCommand(query, connection))
+                {
+                    command.Parameters.AddWithValue("@DaysBack", daysBack);
+
+                    using (var reader = await command.ExecuteReaderAsync())
+                    {
+                        while (await reader.ReadAsync())
+                        {
+                            dailyVisitorCounts.Add(reader.GetInt32(1));
+                        }
+                    }
+                }
+            }
+
+            return dailyVisitorCounts;
+        }
+
+
         public VisitorSession? GetSessionById(Guid sessionId)
         {
             VisitorSession? session = null;

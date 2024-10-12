@@ -518,5 +518,53 @@ namespace PPTWebApp.Data.Repositories
             }
             return totalCount;
         }
+
+        public async Task<List<(int Sales, Product Product)>> GetTopSellingProductsAsync(int topProductsCount)
+        {
+            var topSellingProducts = new List<(int Sales, Product Product)>();
+
+            using (var connection = new NpgsqlConnection(_connectionString))
+            {
+                await connection.OpenAsync();
+
+                string query = $@"
+                    SELECT 
+                        p.id, p.name, p.description, p.SKU, p.price, p.imageurl, p.imagecompromise,
+                        p.categoryid, p.inventoryid, p.discountid,  -- Include required columns
+                        COALESCE(SUM(oi.quantity), 0) AS sales
+                    FROM 
+                        products p
+                    LEFT JOIN 
+                        orderitems oi ON p.id = oi.productid
+                    LEFT JOIN 
+                        orderdetails od ON oi.orderid = od.id
+                    WHERE 
+                        p.deletedat IS NULL  -- Ensure you're only fetching non-deleted products
+                    GROUP BY 
+                        p.id
+                    ORDER BY 
+                        sales DESC
+                    LIMIT @TopProductsCount";
+
+                using (var command = new NpgsqlCommand(query, connection))
+                {
+                    command.Parameters.AddWithValue("@TopProductsCount", topProductsCount);
+
+                    using (var reader = await command.ExecuteReaderAsync())
+                    {
+                        while (await reader.ReadAsync())
+                        {
+                            var product = MapProductFromReader(reader); 
+
+                            int sales = reader.GetInt32(10);
+                            topSellingProducts.Add((sales, product));
+                        }
+                    }
+                }
+            }
+
+            return topSellingProducts;
+        }
+
     }
 }

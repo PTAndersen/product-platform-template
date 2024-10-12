@@ -542,4 +542,49 @@ public class ApplicationUserRepository : IApplicationUserRepository
         return totalCount;
     }
 
+
+    public async Task<List<int>> GetDailyUserRegistrationsAsync(int daysBack)
+    {
+        var dailyRegistrations = new List<int>();
+
+        using (var connection = new NpgsqlConnection(_connectionString))
+        {
+            await connection.OpenAsync();
+
+            string query = $@"
+            WITH date_series AS (
+                SELECT 
+                    CURRENT_DATE - INTERVAL '1 day' * generate_series(0, @DaysBack - 1) AS day
+            )
+            SELECT 
+                day, 
+                COALESCE(COUNT(up.userid), 0) AS registrations
+            FROM 
+                date_series d
+            LEFT JOIN 
+                userprofiles up ON d.day = up.createdat::date
+            LEFT JOIN 
+                aspnetusers u ON up.userid = u.id
+            GROUP BY 
+                day
+            ORDER BY 
+                day ASC";
+
+            using (var command = new NpgsqlCommand(query, connection))
+            {
+                command.Parameters.AddWithValue("@DaysBack", daysBack);
+
+                using (var reader = await command.ExecuteReaderAsync())
+                {
+                    while (await reader.ReadAsync())
+                    {
+                        dailyRegistrations.Add(reader.GetInt32(1));
+                    }
+                }
+            }
+        }
+
+        return dailyRegistrations;
+    }
+
 }

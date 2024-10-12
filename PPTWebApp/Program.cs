@@ -76,6 +76,8 @@ builder.Services.AddScoped<IVisitorPageViewRepository>(provider => new VisitorPa
 builder.Services.AddScoped<VisitorPageViewService>();
 builder.Services.AddScoped<IUserActivityRepository>(provider => new UserActivityRepository(connectionString));
 builder.Services.AddScoped<UserActivityService>();
+builder.Services.AddScoped<IOrderRepository>(provider => new OrderRepository(connectionString));
+builder.Services.AddScoped<OrderService>();
 
 builder.WebHost.UseStaticWebAssets();
 

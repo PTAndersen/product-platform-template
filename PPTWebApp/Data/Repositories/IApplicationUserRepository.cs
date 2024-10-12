@@ -32,4 +32,7 @@ public interface IApplicationUserRepository
     Task<IList<ApplicationUser>> SearchUsersAsync(string? keyword, string? role, int startIndex, int range, CancellationToken cancellationToken);
 
     Task<int> GetTotalUserCountAsync(string? keyword, string? role, CancellationToken cancellationToken);
+
+    // Other
+    Task<List<int>> GetDailyUserRegistrationsAsync(int daysBack);
 }
