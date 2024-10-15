@@ -65,7 +65,16 @@
 
 @code {
     private bool isAdmin = false;
-    private Post? postModel;
+    private Post postModel { get; set; } = new Post
+        {
+            Title = string.Empty,
+            Content = string.Empty,
+            ImageUrl = "https://via.placeholder.com/400x400",
+            ImageCompromise = "vertical",
+            Author = string.Empty,
+            DatePosted = DateTime.Now
+        };
+
     private string? htmlFileContent;
 
     protected override async Task OnInitializedAsync()
@@ -76,7 +85,7 @@
         if (user.Identity != null && user.Identity.IsAuthenticated)
         {
             var currentUser = await UserManager.GetUserAsync(user);
-            if (await UserManager.IsInRoleAsync(currentUser, "Admin"))
+            if (currentUser != null && await UserManager.IsInRoleAsync(currentUser, "Admin"))
             {
                 isAdmin = true;
             }

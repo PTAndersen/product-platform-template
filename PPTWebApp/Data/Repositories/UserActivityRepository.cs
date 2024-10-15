@@ -15,39 +15,58 @@ namespace PPTWebApp.Data.Repositories
 
         public bool UpdateUserActivity(Guid userId)
         {
-            using (var connection = new NpgsqlConnection(_connectionString))
+            try
             {
-                connection.Open();
-
-                string checkUserQuery = "SELECT COUNT(1) FROM aspnetusers WHERE id = @UserId";
-                using (var checkCommand = new NpgsqlCommand(checkUserQuery, connection))
+                using (var connection = new NpgsqlConnection(_connectionString))
                 {
-                    checkCommand.Parameters.AddWithValue("@UserId", userId);
-                    var userExists = (long)checkCommand.ExecuteScalar();
+                    connection.Open();
 
-                    if (userExists == 0)
+                    string checkUserQuery = "SELECT COUNT(1) FROM aspnetusers WHERE id = @UserId";
+                    using (var checkCommand = new NpgsqlCommand(checkUserQuery, connection))
                     {
-                        return false;
+                        checkCommand.Parameters.AddWithValue("@UserId", userId);
+
+                        var result = checkCommand.ExecuteScalar();
+                        var userExists = result != DBNull.Value && result != null ? (long)result : 0;
+
+                        if (userExists == 0)
+                        {
+                            return false;
+                        }
                     }
+
+                    string query = @"
+                        INSERT INTO useractivity (userid, lastactivityat) 
+                        VALUES (@UserId, @LastActivityAt)
+                        ON CONFLICT (userid) DO UPDATE 
+                        SET lastactivityat = @LastActivityAt";
+
+                    using (var command = new NpgsqlCommand(query, connection))
+                    {
+                        command.Parameters.AddWithValue("@UserId", userId);
+                        command.Parameters.AddWithValue("@LastActivityAt", DateTime.UtcNow);
+
+                        command.ExecuteNonQuery();
+                    }
+
+                    return true;
                 }
-
-                string query = @"
-                    INSERT INTO useractivity (userid, lastactivityat) 
-                    VALUES (@UserId, @LastActivityAt)
-                    ON CONFLICT (userid) DO UPDATE 
-                    SET lastactivityat = @LastActivityAt";
-
-                using (var command = new NpgsqlCommand(query, connection))
-                {
-                    command.Parameters.AddWithValue("@UserId", userId);
-                    command.Parameters.AddWithValue("@LastActivityAt", DateTime.UtcNow);
-
-                    command.ExecuteNonQuery();
-                }
-
-                return true;
             }
+            catch (NpgsqlException ex)
+            {
+                Console.WriteLine($"Database error occurred: {ex.Message}");
+                //TODO: Log error
+                return false;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"An error occurred: {ex.Message}");
+                //TODO: Log error
+                return false;
+            }
+
         }
+
 
         public UserActivity? GetLastActivity(int userId)
         {

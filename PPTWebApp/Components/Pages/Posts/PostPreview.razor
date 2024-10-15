@@ -29,7 +29,7 @@ else
 
     private string ImageClass => GetImageClass(Post?.ImageCompromise);
 
-    private string GetImageClass(string imageCompromise)
+    private string GetImageClass(string? imageCompromise)
     {
         return imageCompromise == "horizontal" ? "image-horizontal" : "image-vertical";
     }

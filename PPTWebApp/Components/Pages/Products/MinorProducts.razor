@@ -73,15 +73,30 @@
 
     private void OnPageInputChange(ChangeEventArgs e)
     {
-        int inputPage = Math.Max(1, Math.Min(TotalPages, int.Parse(e.Value.ToString())));
+        if (e.Value != null && int.TryParse(e.Value.ToString(), out var inputPage))
+        {
+            inputPage = Math.Max(1, Math.Min(TotalPages, inputPage));
+        }
+        else
+        {
+            inputPage = 1;
+        }
+
         PageIndex = inputPage - 1;
         LoadProducts();
     }
 
     private void OnCategoryChange(ChangeEventArgs e)
     {
-        var selectedCategoryId = int.Parse(e.Value.ToString());
-        SelectedCategory = ProductCategories.FirstOrDefault(c => c.Id == selectedCategoryId);
+        if (e.Value != null && int.TryParse(e.Value.ToString(), out var selectedCategoryId))
+        {
+            SelectedCategory = ProductCategories.FirstOrDefault(c => c.Id == selectedCategoryId);
+        }
+        else
+        {
+            SelectedCategory = null;
+        }
+
         PageIndex = 0;
         searchInput = "";
         LoadProducts();
@@ -89,33 +104,32 @@
 
     private void OnMinPriceChange(ChangeEventArgs e)
     {
-        MinPrice = decimal.TryParse(e.Value.ToString(), out var result) ? result : 0;
+        MinPrice = e.Value != null && decimal.TryParse(e.Value.ToString(), out var result) ? result : 0;
         PageIndex = 0;
         LoadProducts();
     }
 
     private void OnMaxPriceChange(ChangeEventArgs e)
     {
-        MaxPrice = decimal.TryParse(e.Value.ToString(), out var result) ? result : 1000;
+        MaxPrice = e.Value != null && decimal.TryParse(e.Value.ToString(), out var result) ? result : 1000;
         PageIndex = 0;
         LoadProducts();
     }
 
     private void OnSortByChange(ChangeEventArgs e)
     {
-        SortBy = e.Value.ToString();
+        SortBy = e.Value?.ToString() ?? string.Empty;
         PageIndex = 0;
         LoadProducts();
     }
 
     private void OnSearchInputChange(ChangeEventArgs e)
     {
-        searchInput = e.Value.ToString();
+        searchInput = e.Value?.ToString() ?? string.Empty;
         SortBy = "Search Results";
         PageIndex = 0;
         LoadProducts();
     }
-
 }
 
 <div class="product-grid-container">

@@ -6,6 +6,6 @@ public interface IApplicationRoleRepository
     Task<IdentityResult> CreateRoleAsync(IdentityRole role, CancellationToken cancellationToken);
     Task<IdentityResult> UpdateRoleAsync(IdentityRole role, CancellationToken cancellationToken);
     Task<IdentityResult> DeleteRoleAsync(IdentityRole role, CancellationToken cancellationToken);
-    Task<IdentityRole> FindRoleByIdAsync(string roleId, CancellationToken cancellationToken);
-    Task<IdentityRole> FindRoleByNameAsync(string normalizedRoleName, CancellationToken cancellationToken);
+    Task<IdentityRole?> FindRoleByIdAsync(string roleId, CancellationToken cancellationToken);
+    Task<IdentityRole?> FindRoleByNameAsync(string normalizedRoleName, CancellationToken cancellationToken);
 }

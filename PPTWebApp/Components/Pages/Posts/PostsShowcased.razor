@@ -19,7 +19,7 @@
 </div>
 
 @code {
-    private IEnumerable<Post> posts;
+    private IEnumerable<Post> posts = Enumerable.Empty<Post>();
 
     protected override async Task OnInitializedAsync()
     {

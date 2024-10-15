@@ -48,6 +48,16 @@ namespace PPTWebApp.Data.Repositories
         {
             cancellationToken.ThrowIfCancellationRequested();
 
+            if (role == null)
+            {
+                return IdentityResult.Failed(new IdentityError { Description = "Role cannot be null." });
+            }
+
+            if (string.IsNullOrEmpty(role.Name) || string.IsNullOrEmpty(role.NormalizedName))
+            {
+                return IdentityResult.Failed(new IdentityError { Description = "Role name and normalized name cannot be null or empty." });
+            }
+
             try
             {
                 using (var connection = new NpgsqlConnection(_connectionString))
@@ -67,6 +77,7 @@ namespace PPTWebApp.Data.Repositories
             catch (Exception ex)
             {
                 Console.WriteLine($"Error updating role: {ex.Message}");
+                //TODO: Log error
                 return IdentityResult.Failed(new IdentityError { Description = $"Error updating role: {ex.Message}" });
             }
         }
@@ -95,56 +106,87 @@ namespace PPTWebApp.Data.Repositories
             }
         }
 
-        public async Task<IdentityRole> FindRoleByIdAsync(string roleId, CancellationToken cancellationToken)
+        public async Task<IdentityRole?> FindRoleByIdAsync(string roleId, CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
 
-            using (var connection = new NpgsqlConnection(_connectionString))
+            try
             {
-                var command = new NpgsqlCommand("SELECT id, name, normalizedname FROM aspnetroles WHERE id = @RoleId", connection);
-                command.Parameters.Add("@RoleId", NpgsqlTypes.NpgsqlDbType.Uuid).Value = Guid.Parse(roleId);
-
-                connection.Open();
-                using (var reader = await command.ExecuteReaderAsync(CommandBehavior.SingleRow, cancellationToken))
+                using (var connection = new NpgsqlConnection(_connectionString))
                 {
-                    if (await reader.ReadAsync(cancellationToken))
+                    var command = new NpgsqlCommand("SELECT id, name, normalizedname FROM aspnetroles WHERE id = @RoleId", connection);
+                    command.Parameters.Add("@RoleId", NpgsqlTypes.NpgsqlDbType.Uuid).Value = Guid.Parse(roleId);
+
+                    connection.Open();
+                    using (var reader = await command.ExecuteReaderAsync(CommandBehavior.SingleRow, cancellationToken))
                     {
-                        return new IdentityRole
+                        if (await reader.ReadAsync(cancellationToken))
                         {
-                            Id = reader["id"].ToString(),
-                            Name = reader["name"].ToString(),
-                            NormalizedName = reader["normalizedname"].ToString()
-                        };
+                            var id = reader["id"]?.ToString();
+                            var name = reader["name"]?.ToString();
+                            var normalizedName = reader["normalizedname"]?.ToString();
+
+                            if (id != null)
+                            {
+                                return new IdentityRole
+                                {
+                                    Id = id,
+                                    Name = name,
+                                    NormalizedName = normalizedName
+                                };
+                            }
+                        }
                     }
                 }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error finding role by ID: {ex.Message}");
+                //TODO: Log error
             }
 
             return null;
         }
 
 
-        public async Task<IdentityRole> FindRoleByNameAsync(string normalizedRoleName, CancellationToken cancellationToken)
+
+        public async Task<IdentityRole?> FindRoleByNameAsync(string normalizedRoleName, CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
 
-            using (var connection = new NpgsqlConnection(_connectionString))
+            try
             {
-                var command = new NpgsqlCommand("SELECT id, name, normalizedname FROM aspnetroles WHERE normalizedname = @NormalizedRoleName", connection);
-                command.Parameters.AddWithValue("@NormalizedRoleName", normalizedRoleName);
-
-                connection.Open();
-                using (var reader = await command.ExecuteReaderAsync(CommandBehavior.SingleRow, cancellationToken))
+                using (var connection = new NpgsqlConnection(_connectionString))
                 {
-                    if (await reader.ReadAsync(cancellationToken))
+                    var command = new NpgsqlCommand("SELECT id, name, normalizedname FROM aspnetroles WHERE normalizedname = @NormalizedRoleName", connection);
+                    command.Parameters.AddWithValue("@NormalizedRoleName", normalizedRoleName);
+
+                    connection.Open();
+                    using (var reader = await command.ExecuteReaderAsync(CommandBehavior.SingleRow, cancellationToken))
                     {
-                        return new IdentityRole
+                        if (await reader.ReadAsync(cancellationToken))
                         {
-                            Id = reader["id"].ToString(),
-                            Name = reader["name"].ToString(),
-                            NormalizedName = reader["normalizedname"].ToString()
-                        };
+                            var id = reader["id"]?.ToString();
+                            var name = reader["name"]?.ToString();
+                            var normalizedName = reader["normalizedname"]?.ToString();
+
+                            if (id != null)
+                            {
+                                return new IdentityRole
+                                {
+                                    Id = id,
+                                    Name = name,
+                                    NormalizedName = normalizedName
+                                };
+                            }
+                        }
                     }
                 }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error finding role by normalized name: {ex.Message}");
+                //TODO: Log error
             }
 
             return null;

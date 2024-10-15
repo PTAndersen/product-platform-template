@@ -4,7 +4,7 @@ public class BasketService
 {
     private List<BasketItem> basketItems = new();
 
-    public event Action OnChange;
+    public event Action? OnChange;
 
     public List<BasketItem> GetBasketItems()
     {

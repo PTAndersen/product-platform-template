@@ -502,7 +502,12 @@ namespace PPTWebApp.Data
                         {
                             insertInventoryCommand.Parameters.AddWithValue("@Quantity", 100 + i);
                             insertInventoryCommand.Parameters.AddWithValue("@CreatedAt", DateTime.Now);
-                            inventoryId = (int)insertInventoryCommand.ExecuteScalar();
+                            inventoryId = insertInventoryCommand.ExecuteScalar() as int?;
+                            if (inventoryId == null)
+                            {
+                                throw new InvalidOperationException("Failed to insert inventory and retrieve the ID.");
+                            }
+
                         }
                     }
 
@@ -517,7 +522,7 @@ namespace PPTWebApp.Data
                         insertProductCommand.Parameters.AddWithValue("@Description", $"This is the description of product {i}.");
                         insertProductCommand.Parameters.AddWithValue("@SKU", $"SKU-{i}");
                         insertProductCommand.Parameters.AddWithValue("@CategoryId", categoryId);
-                        insertProductCommand.Parameters.AddWithValue("@InventoryId", (object)inventoryId ?? DBNull.Value);
+                        insertProductCommand.Parameters.AddWithValue("@InventoryId", inventoryId.HasValue ? inventoryId.Value : DBNull.Value);
                         insertProductCommand.Parameters.AddWithValue("@Price", 9.99m + i);
                         insertProductCommand.Parameters.AddWithValue("@ImageUrl", $"https://via.placeholder.com/400?text=Product+{i}");
                         insertProductCommand.Parameters.AddWithValue("@ImageCompromise", "horizontal");

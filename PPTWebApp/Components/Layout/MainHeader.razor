@@ -128,7 +128,7 @@
         var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
         var user = authState.User;
 
-        isLoggedIn = user.Identity.IsAuthenticated;
+        isLoggedIn = user.Identity != null && user.Identity.IsAuthenticated;
 
         if (isLoggedIn)
         {

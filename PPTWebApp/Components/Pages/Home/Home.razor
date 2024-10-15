@@ -17,11 +17,11 @@
 @code {
     public class Module
     {
-        public Type ComponentType { get; set; }
-        public string Id { get; set; }
+        public required Type ComponentType { get; set; }
+        public required string Id { get; set; }
     }
 
-    private List<Module> Modules { get; set; }
+    private List<Module> Modules { get; set; } = new();
 
     protected override void OnInitialized()
     {

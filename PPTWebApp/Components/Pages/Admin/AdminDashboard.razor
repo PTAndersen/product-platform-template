@@ -79,7 +79,7 @@
         if (user.Identity != null && user.Identity.IsAuthenticated)
         {
             var currentUser = await UserManager.GetUserAsync(user);
-            if (await UserManager.IsInRoleAsync(currentUser, "Admin"))
+            if (currentUser != null && await UserManager.IsInRoleAsync(currentUser, "Admin"))
             {
                 isAdmin = true;
             }

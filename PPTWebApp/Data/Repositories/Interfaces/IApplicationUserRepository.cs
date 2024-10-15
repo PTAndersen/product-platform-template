@@ -11,8 +11,8 @@ public interface IApplicationUserRepository
     Task<ApplicationUser?> GetUserByEmailAsync(string normalizedEmail, CancellationToken cancellationToken);
 
     // Password Management
-    Task SetPasswordHashAsync(ApplicationUser user, string passwordHash, CancellationToken cancellationToken);
-    Task<string> GetPasswordHashAsync(ApplicationUser user, CancellationToken cancellationToken);
+    Task SetPasswordHashAsync(ApplicationUser user, string? passwordHash, CancellationToken cancellationToken);
+    Task<string?> GetPasswordHashAsync(ApplicationUser user, CancellationToken cancellationToken);
     Task<bool> HasPasswordAsync(ApplicationUser user, CancellationToken cancellationToken);
 
     // Role Management

@@ -86,7 +86,7 @@
 @code {
     private bool isAdmin = false;
     private List<string> Tables = new List<string> { "Posts", "Products", "Users", "Product Categories", "Discounts" };
-    private string SelectedTable;
+    private string? SelectedTable;
     private List<string> TableHeaders = new List<string>();
     private List<Dictionary<string, object>> PaginatedEntities = new List<Dictionary<string, object>>();
     private int PageSize = 20; // Items per page
@@ -103,7 +103,7 @@
         if (user.Identity != null && user.Identity.IsAuthenticated)
         {
             var currentUser = await UserManager.GetUserAsync(user);
-            if (await UserManager.IsInRoleAsync(currentUser, "Admin"))
+            if (currentUser != null && await UserManager.IsInRoleAsync(currentUser, "Admin"))
             {
                 isAdmin = true;
             }
@@ -117,7 +117,7 @@
 
     private async void OnTableSelectionChanged(ChangeEventArgs e)
     {
-        SelectedTable = e.Value.ToString();
+        SelectedTable = e.Value?.ToString();
         PageIndex = 0;
         await LoadTableDataAsync();
     }
@@ -159,7 +159,7 @@
                 PaginatedEntities = users.Select(user => new Dictionary<string, object>
                 {
                     { "ID", user.Id },
-                    { "Username", user.UserName },
+                    { "Username", user.UserName == null ? "N/A" : user.UserName},
                     { "Email", user.Email == null ? "N/A" : user.Email }
                 }).ToList();
                 break;
@@ -199,26 +199,24 @@
     }
 
     private void SetTotalItems()
-{
-    if (SelectedTable == "Posts")
     {
-        TotalItems = PostService.GetTotalPostCount(SearchQuery);
+        if (SelectedTable == "Posts")
+        {
+            TotalItems = PostService.GetTotalPostCount(SearchQuery);
+        }
+        else if (SelectedTable == "Products")
+        {
+            TotalItems = ProductService.GetTotalProductCount(null, SearchQuery, 0, 1000000000);
+        }
+        else if (SelectedTable == "Discounts")
+        {
+            TotalItems = DiscountService.GetDiscountCount(SearchQuery);
+        }
     }
-    else if (SelectedTable == "Products")
-    {
-        TotalItems = ProductService.GetTotalProductCount(null, SearchQuery, 0, 1000000000);
-    }
-    else if (SelectedTable == "Discounts")
-    {
-        TotalItems = DiscountService.GetDiscountCount(SearchQuery);
-    }
-}
-
-
 
     private void OnSearchChanged(ChangeEventArgs e)
     {
-        SearchQuery = e.Value.ToString();
+        SearchQuery = e.Value?.ToString() ?? string.Empty;
         PageIndex = 0;
         SetTotalItems();
         _ = LoadTableDataAsync();
@@ -244,7 +242,15 @@
 
     private void OnPageInputChange(ChangeEventArgs e)
     {
-        int inputPage = Math.Max(1, Math.Min(TotalPages, int.Parse(e.Value.ToString())));
+        if (e.Value != null && int.TryParse(e.Value.ToString(), out var inputPage))
+        {
+            inputPage = Math.Max(1, Math.Min(TotalPages, inputPage));
+        }
+        else
+        {
+            inputPage = 1;
+        }
+
         PageIndex = inputPage - 1;
     }
 

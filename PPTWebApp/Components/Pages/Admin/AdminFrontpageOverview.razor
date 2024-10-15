@@ -67,17 +67,18 @@
 @code {
     private bool isAdmin = false;
 
-    private string highlight1Id;
-    private string highlight2Id;
-    private string highlight3Id;
+    private string highlight1Id = string.Empty;
+    private string highlight2Id = string.Empty;
+    private string highlight3Id = string.Empty;
 
     private string selectedHighlight1 = "No product selected";
     private string selectedHighlight2 = "No product selected";
     private string selectedHighlight3 = "No product selected";
 
-    private string highlight1Status;
-    private string highlight2Status;
-    private string highlight3Status;
+    private string highlight1Status = string.Empty;
+    private string highlight2Status = string.Empty;
+    private string highlight3Status = string.Empty;
+
 
     protected override async Task OnInitializedAsync()
     {
@@ -87,7 +88,7 @@
         if (user.Identity != null && user.Identity.IsAuthenticated)
         {
             var currentUser = await UserManager.GetUserAsync(user);
-            if (await UserManager.IsInRoleAsync(currentUser, "Admin"))
+            if (currentUser != null && await UserManager.IsInRoleAsync(currentUser, "Admin"))
             {
                 isAdmin = true;
             }

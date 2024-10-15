@@ -295,28 +295,50 @@ public class ApplicationUserRepository : IApplicationUserRepository
 
     #region Password Management
 
-    public async Task SetPasswordHashAsync(ApplicationUser user, string passwordHash, CancellationToken cancellationToken)
+    public async Task SetPasswordHashAsync(ApplicationUser user, string? passwordHash, CancellationToken cancellationToken)
     {
+        if (user == null) throw new ArgumentNullException(nameof(user));
+        if (string.IsNullOrEmpty(user.Id)) throw new ArgumentException("User ID cannot be null or empty.", nameof(user));
+        if (!Guid.TryParse(user.Id, out var userId))
+        {
+            throw new ArgumentException("Invalid User ID format.", nameof(user.Id));
+        }
+
         cancellationToken.ThrowIfCancellationRequested();
 
-        using (var connection = new NpgsqlConnection(_connectionString))
+        try
         {
+            await using var connection = new NpgsqlConnection(_connectionString);
             var command = new NpgsqlCommand(
                 @"UPDATE aspnetusers 
-              SET passwordhash = @PasswordHash
-              WHERE id = @UserId", connection);
+                SET passwordhash = @PasswordHash
+                WHERE id = @UserId", connection);
 
             command.Parameters.AddWithValue("@PasswordHash", passwordHash ?? (object)DBNull.Value);
-            command.Parameters.AddWithValue("@UserId", Guid.Parse(user.Id));
+            command.Parameters.AddWithValue("@UserId", userId);
 
             connection.Open();
             await command.ExecuteNonQueryAsync(cancellationToken);
+
+            user.PasswordHash = passwordHash;
+        }
+        catch (NpgsqlException ex)
+        {
+            Console.WriteLine($"Database error occurred: {ex.Message}");
+            //TODO: Log error
+            throw new ApplicationException("An error occurred while updating the password hash.", ex);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"An error occurred: {ex.Message}");
+            //TODO: Log error
+            throw new ApplicationException("An error occurred while updating the password hash.", ex);
         }
 
-        user.PasswordHash = passwordHash;
     }
 
-    public async Task<string> GetPasswordHashAsync(ApplicationUser user, CancellationToken cancellationToken)
+
+    public async Task<string?> GetPasswordHashAsync(ApplicationUser user, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
 
@@ -366,9 +388,9 @@ public class ApplicationUserRepository : IApplicationUserRepository
         {
             var command = new NpgsqlCommand(
                 @"SELECT r.name 
-              FROM aspnetroles r
-              INNER JOIN aspnetuserroles ur ON ur.roleid = r.id
-              WHERE ur.userid = @UserId", connection);
+                  FROM aspnetroles r
+                  INNER JOIN aspnetuserroles ur ON ur.roleid = r.id
+                  WHERE ur.userid = @UserId", connection);
 
             command.Parameters.AddWithValue("@UserId", Guid.Parse(user.Id));
 
@@ -394,10 +416,10 @@ public class ApplicationUserRepository : IApplicationUserRepository
         {
             var command = new NpgsqlCommand(
                 @"SELECT u.id, u.username, u.email, u.normalizedusername, u.normalizedemail
-              FROM aspnetusers u
-              INNER JOIN aspnetuserroles ur ON ur.userid = u.id
-              INNER JOIN aspnetroles r ON ur.roleid = r.id
-              WHERE r.normalizedname = @RoleName", connection);
+                  FROM aspnetusers u
+                  INNER JOIN aspnetuserroles ur ON ur.userid = u.id
+                  INNER JOIN aspnetroles r ON ur.roleid = r.id
+                  WHERE r.normalizedname = @RoleName", connection);
 
             command.Parameters.AddWithValue("@RoleName", roleName.ToUpper());
 
@@ -418,22 +440,34 @@ public class ApplicationUserRepository : IApplicationUserRepository
     {
         cancellationToken.ThrowIfCancellationRequested();
 
-        using (var connection = new NpgsqlConnection(_connectionString))
+        try
         {
-            var command = new NpgsqlCommand(
-                @"SELECT COUNT(*) 
-              FROM aspnetuserroles ur
-              INNER JOIN aspnetroles r ON ur.roleid = r.id
-              WHERE ur.userid = @UserId AND r.normalizedname = @RoleName", connection);
+            using (var connection = new NpgsqlConnection(_connectionString))
+            {
+                var command = new NpgsqlCommand(
+                    @"SELECT COUNT(*) 
+                      FROM aspnetuserroles ur
+                      INNER JOIN aspnetroles r ON ur.roleid = r.id
+                      WHERE ur.userid = @UserId AND r.normalizedname = @RoleName", connection);
 
-            command.Parameters.AddWithValue("@UserId", Guid.Parse(user.Id));
-            command.Parameters.AddWithValue("@RoleName", roleName.ToUpper());
+                command.Parameters.AddWithValue("@UserId", Guid.Parse(user.Id));
+                command.Parameters.AddWithValue("@RoleName", roleName.ToUpper());
 
-            connection.Open();
-            var count = (long)await command.ExecuteScalarAsync(cancellationToken);
-            return count > 0;
+                connection.Open();
+                var result = await command.ExecuteScalarAsync(cancellationToken);
+
+                var count = result != null ? (long)result : 0;
+                return count > 0;
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error checking if user is in role: {ex.Message}");
+            //TODO: Log error
+            return false;
         }
     }
+
 
     public async Task RemoveFromRoleAsync(ApplicationUser user, string roleName, CancellationToken cancellationToken)
     {

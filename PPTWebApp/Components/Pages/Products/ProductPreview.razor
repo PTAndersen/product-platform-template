@@ -5,11 +5,11 @@
 @rendermode InteractiveServer
 
 @code {
-    [Parameter] public Product Product { get; set; }
+    [Parameter] public Product? Product { get; set; }
 
     private string ImageClass => GetImageClass(Product?.ImageCompromise);
 
-    private string GetImageClass(string imageCompromise)
+    private string GetImageClass(string? imageCompromise)
     {
         return imageCompromise == "horizontal" ? "image-horizontal" : "image-vertical";
     }

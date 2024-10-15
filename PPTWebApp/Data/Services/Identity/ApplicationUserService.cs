@@ -80,23 +80,23 @@ public class ApplicationUserService : IUserStore<ApplicationUser>, IUserPassword
         return Task.FromResult(user.Id);
     }
 
-    public Task<string> GetUserNameAsync(ApplicationUser user, CancellationToken cancellationToken)
+    public Task<string?> GetUserNameAsync(ApplicationUser user, CancellationToken cancellationToken)
     {
         return Task.FromResult(user.UserName);
     }
 
-    public Task SetUserNameAsync(ApplicationUser user, string userName, CancellationToken cancellationToken)
+    public Task SetUserNameAsync(ApplicationUser user, string? userName, CancellationToken cancellationToken)
     {
         user.UserName = userName;
         return Task.CompletedTask;
     }
 
-    public Task<string> GetNormalizedUserNameAsync(ApplicationUser user, CancellationToken cancellationToken)
+    public Task<string?> GetNormalizedUserNameAsync(ApplicationUser user, CancellationToken cancellationToken)
     {
         return Task.FromResult(user.NormalizedUserName);
     }
 
-    public Task SetNormalizedUserNameAsync(ApplicationUser user, string normalizedName, CancellationToken cancellationToken)
+    public Task SetNormalizedUserNameAsync(ApplicationUser user, string? normalizedName, CancellationToken cancellationToken)
     {
         user.NormalizedUserName = normalizedName;
         return Task.CompletedTask;
@@ -106,12 +106,12 @@ public class ApplicationUserService : IUserStore<ApplicationUser>, IUserPassword
 
     #region IUserPasswordStore Implementation
 
-    public async Task<string> GetPasswordHashAsync(ApplicationUser user, CancellationToken cancellationToken)
+    public async Task<string?> GetPasswordHashAsync(ApplicationUser user, CancellationToken cancellationToken)
     {
         return await _applicationUserRepository.GetPasswordHashAsync(user, cancellationToken);
     }
 
-    public async Task SetPasswordHashAsync(ApplicationUser user, string passwordHash, CancellationToken cancellationToken)
+    public async Task SetPasswordHashAsync(ApplicationUser user, string? passwordHash, CancellationToken cancellationToken)
     {
         await _applicationUserRepository.SetPasswordHashAsync(user, passwordHash, cancellationToken);
     }
