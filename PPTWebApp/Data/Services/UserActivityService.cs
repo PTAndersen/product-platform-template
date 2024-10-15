@@ -1,5 +1,9 @@
 ﻿using PPTWebApp.Data.Models;
 using PPTWebApp.Data.Repositories.Interfaces;
+using System;
+using System.Collections.Generic;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace PPTWebApp.Data.Services
 {
@@ -12,19 +16,19 @@ namespace PPTWebApp.Data.Services
             _userActivityRepository = userActivityRepository ?? throw new ArgumentNullException(nameof(userActivityRepository));
         }
 
-        public bool UpdateUserActivity(Guid userId)
+        public async Task<bool> UpdateUserActivityAsync(Guid userId, CancellationToken cancellationToken)
         {
-            return _userActivityRepository.UpdateUserActivity(userId);
+            return await _userActivityRepository.UpdateUserActivityAsync(userId, cancellationToken);
         }
 
-        public UserActivity? GetLastActivity(int userId)
+        public async Task<UserActivity?> GetLastActivityAsync(int userId, CancellationToken cancellationToken)
         {
-            return _userActivityRepository.GetLastActivity(userId);
+            return await _userActivityRepository.GetLastActivityAsync(userId, cancellationToken);
         }
 
-        public IEnumerable<UserActivity> GetActiveUsersWithin(TimeSpan timeSpan)
+        public async Task<IEnumerable<UserActivity>> GetActiveUsersWithinAsync(TimeSpan timeSpan, CancellationToken cancellationToken)
         {
-            return _userActivityRepository.GetActiveUsersWithin(timeSpan);
+            return await _userActivityRepository.GetActiveUsersWithinAsync(timeSpan, cancellationToken);
         }
     }
 }

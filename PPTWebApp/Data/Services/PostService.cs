@@ -1,5 +1,8 @@
 ﻿using PPTWebApp.Data.Models;
 using PPTWebApp.Data.Repositories.Interfaces;
+using System.Collections.Generic;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace PPTWebApp.Data.Services
 {
@@ -12,39 +15,39 @@ namespace PPTWebApp.Data.Services
             _postRepository = postRepository;
         }
 
-        public IEnumerable<Post> GetHighlightedPosts()
+        public async Task<IEnumerable<Post>> GetHighlightedPostsAsync(CancellationToken cancellationToken)
         {
-            return _postRepository.GetPostsInRange(null, 0, 3);
+            return await _postRepository.GetPostsInRangeAsync(null, 0, 3, cancellationToken);
         }
 
-        public IEnumerable<Post> GetPostsInRange(string? keyword, int startIndex, int range)
+        public async Task<IEnumerable<Post>> GetPostsInRangeAsync(string? keyword, int startIndex, int range, CancellationToken cancellationToken)
         {
-            return _postRepository.GetPostsInRange(keyword, startIndex, range);
+            return await _postRepository.GetPostsInRangeAsync(keyword, startIndex, range, cancellationToken);
         }
 
-        public int GetTotalPostCount(string? keyword)
+        public async Task<int> GetTotalPostCountAsync(string? keyword, CancellationToken cancellationToken)
         {
-            return _postRepository.GetTotalPostCount(keyword);
+            return await _postRepository.GetTotalPostCountAsync(keyword, cancellationToken);
         }
 
-        public Post? GetPostById(int id)
+        public async Task<Post?> GetPostByIdAsync(int id, CancellationToken cancellationToken)
         {
-            return _postRepository.GetPostById(id);
+            return await _postRepository.GetPostByIdAsync(id, cancellationToken);
         }
 
-        public void AddPost(Post post)
+        public async Task AddPostAsync(Post post, CancellationToken cancellationToken)
         {
-            _postRepository.AddPost(post);
+            await _postRepository.AddPostAsync(post, cancellationToken);
         }
 
-        public void UpdatePost(Post post)
+        public async Task UpdatePostAsync(Post post, CancellationToken cancellationToken)
         {
-            _postRepository.UpdatePost(post);
+            await _postRepository.UpdatePostAsync(post, cancellationToken);
         }
 
-        public void DeletePost(int id)
+        public async Task DeletePostAsync(int id, CancellationToken cancellationToken)
         {
-            _postRepository.DeletePost(id);
+            await _postRepository.DeletePostAsync(id, cancellationToken);
         }
     }
 }

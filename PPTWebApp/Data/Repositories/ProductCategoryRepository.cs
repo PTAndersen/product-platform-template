@@ -12,159 +12,229 @@ namespace PPTWebApp.Data.Repositories
         {
             _connectionString = connectionString;
         }
-
-        public IEnumerable<ProductCategory> GetAll()
+        public async Task<IEnumerable<ProductCategory>> GetAllAsync(CancellationToken cancellationToken)
         {
+            cancellationToken.ThrowIfCancellationRequested();
+
             var productCategories = new List<ProductCategory>();
 
             string selectSql = @"SELECT id, name, description FROM productcategories;";
 
-            using (var connection = new NpgsqlConnection(_connectionString))
+            try
             {
-                connection.Open();
-
-                using (var command = new NpgsqlCommand(selectSql, connection))
+                using (var connection = new NpgsqlConnection(_connectionString))
                 {
-                    using (var reader = command.ExecuteReader())
-                    {
-                        while (reader.Read())
-                        {
-                            var productCategory = new ProductCategory
-                            {
-                                Id = reader.GetInt32(reader.GetOrdinal("id")),
-                                Name = reader.GetString(reader.GetOrdinal("name")),
-                                Description = reader.GetString(reader.GetOrdinal("description"))
-                            };
+                    await connection.OpenAsync(cancellationToken);
 
-                            productCategories.Add(productCategory);
+                    using (var command = new NpgsqlCommand(selectSql, connection))
+                    {
+                        using (var reader = await command.ExecuteReaderAsync(cancellationToken))
+                        {
+                            while (await reader.ReadAsync(cancellationToken))
+                            {
+                                var productCategory = new ProductCategory
+                                {
+                                    Id = reader.GetInt32(reader.GetOrdinal("id")),
+                                    Name = reader.GetString(reader.GetOrdinal("name")),
+                                    Description = reader.GetString(reader.GetOrdinal("description"))
+                                };
+
+                                productCategories.Add(productCategory);
+                            }
                         }
                     }
                 }
+            }
+            catch (OperationCanceledException)
+            {
+                Console.WriteLine("Operation was canceled.");
+                //TODO: Log error
+                throw;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error getting all discounts in range: {ex.Message}");
+                //TODO: Log error
+                throw;
             }
 
             return productCategories;
         }
 
-
-        public int AddProductCategory(ProductCategory category)
+        public async Task<int> AddProductCategoryAsync(ProductCategory category, CancellationToken cancellationToken)
         {
+            cancellationToken.ThrowIfCancellationRequested();
+
             if (category == null) throw new ArgumentNullException(nameof(category), "Product category cannot be null.");
 
             string insertSql = @"INSERT INTO productcategories (name, description) 
                                 VALUES (@Name, @Description) 
                                 RETURNING id;";
 
-            using (var connection = new NpgsqlConnection(_connectionString))
+            try
             {
-                connection.Open();
-
-                using (var command = new  NpgsqlCommand(insertSql, connection))
+                using (var connection = new NpgsqlConnection(_connectionString))
                 {
-                    command.Parameters.AddWithValue("@Name", category.Name);
-                    command.Parameters.AddWithValue("@Description", category.Name);
+                    await connection.OpenAsync(cancellationToken);
 
-                    object? result = command.ExecuteScalar();
-                    int? newId = result as int?;
-
-                    if (newId == null)
+                    using (var command = new NpgsqlCommand(insertSql, connection))
                     {
-                        throw new InvalidOperationException("Failed to insert record or retrieve the new ID.");
-                    }
+                        command.Parameters.AddWithValue("@Name", category.Name);
+                        command.Parameters.AddWithValue("@Description", category.Description);
 
-                    return newId.Value;
-                }
-            }
-        }
+                        object? result = await command.ExecuteScalarAsync(cancellationToken);
+                        int? newId = result as int?;
 
-        public bool DeleteProductCategory(int id)
-        {
-            string deleteSql = @"DELETE FROM productioncategories WHERE id = @Id;";
+                        if (newId == null)
+                        {
+                            throw new InvalidOperationException("Failed to insert record or retrieve the new ID.");
+                        }
 
-            using (var connection = new NpgsqlConnection(_connectionString))
-            {
-                connection.Open();
-
-                using (var command = new NpgsqlCommand(deleteSql, connection))
-                {
-                    command.Parameters.AddWithValue("@Id", id);
-
-                    int rowsAffected = command.ExecuteNonQuery();
-
-                    if (rowsAffected > 0)
-                    {
-                        return true;
-                    }
-                    else
-                    {
-                        return false;
+                        return newId.Value;
                     }
                 }
             }
+            catch (OperationCanceledException)
+            {
+                Console.WriteLine("Operation was canceled.");
+                //TODO: Log error
+                throw;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error getting all discounts in range: {ex.Message}");
+                //TODO: Log error
+                throw;
+            }
         }
 
-        public ProductCategory? GetProductCategoryById(int id)
+        public async Task<bool> DeleteProductCategoryAsync(int id, CancellationToken cancellationToken)
         {
+            cancellationToken.ThrowIfCancellationRequested();
+
+            string deleteSql = @"DELETE FROM productcategories WHERE id = @Id;";
+
+            try
+            {
+                using (var connection = new NpgsqlConnection(_connectionString))
+                {
+                    await connection.OpenAsync(cancellationToken);
+
+                    using (var command = new NpgsqlCommand(deleteSql, connection))
+                    {
+                        command.Parameters.AddWithValue("@Id", id);
+
+                        int rowsAffected = await command.ExecuteNonQueryAsync(cancellationToken);
+
+                        return rowsAffected > 0;
+                    }
+                }
+            }
+            catch (OperationCanceledException)
+            {
+                Console.WriteLine("Operation was canceled.");
+                //TODO: Log error
+                throw;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error getting all discounts in range: {ex.Message}");
+                //TODO: Log error
+                throw;
+            }
+        }
+
+        public async Task<ProductCategory?> GetProductCategoryByIdAsync(int id, CancellationToken cancellationToken)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+
             string selectSql = @"SELECT id, name, description FROM productcategories WHERE id=@Id;";
 
-            using (var connection = new NpgsqlConnection(_connectionString))
+            try
             {
-                connection.Open();
-
-                using (var command = new NpgsqlCommand(selectSql, connection))
+                using (var connection = new NpgsqlConnection(_connectionString))
                 {
-                    command.Parameters.AddWithValue("@Id", id);
+                    await connection.OpenAsync(cancellationToken);
 
-                    using (var reader = command.ExecuteReader())
+                    using (var command = new NpgsqlCommand(selectSql, connection))
                     {
-                        if (reader.Read())
-                        {
-                            var productCategory = new ProductCategory
-                            {
-                                Id = reader.GetInt32(reader.GetOrdinal("id")),
-                                Name = reader.GetString(reader.GetOrdinal("name")),
-                                Description = reader.GetString(reader.GetOrdinal("description")),
-                            };
+                        command.Parameters.AddWithValue("@Id", id);
 
-                            return productCategory;
-                        } 
-                        else
+                        using (var reader = await command.ExecuteReaderAsync(cancellationToken))
                         {
-                            return null;
+                            if (await reader.ReadAsync(cancellationToken))
+                            {
+                                var productCategory = new ProductCategory
+                                {
+                                    Id = reader.GetInt32(reader.GetOrdinal("id")),
+                                    Name = reader.GetString(reader.GetOrdinal("name")),
+                                    Description = reader.GetString(reader.GetOrdinal("description")),
+                                };
+
+                                return productCategory;
+                            }
+                            else
+                            {
+                                return null;
+                            }
                         }
                     }
                 }
             }
+            catch (OperationCanceledException)
+            {
+                Console.WriteLine("Operation was canceled.");
+                //TODO: Log error
+                throw;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error getting all discounts in range: {ex.Message}");
+                //TODO: Log error
+                throw;
+            }
         }
 
-        public bool UpdateProductCategory(ProductCategory category)
+        public async Task<bool> UpdateProductCategoryAsync(ProductCategory category, CancellationToken cancellationToken)
         {
+            cancellationToken.ThrowIfCancellationRequested();
+
             if (category == null) throw new ArgumentNullException(nameof(category), "Product category cannot be null.");
 
             string updateSql = @"UPDATE productcategories
-                                SET name = @Name,
-                                    description = @Description
-                                WHERE id = @Id;";
+                        SET name = @Name,
+                            description = @Description
+                        WHERE id = @Id;";
 
-            using (var connection = new NpgsqlConnection(_connectionString))
+            try
             {
-                connection.Open();
-
-                using (var command = new NpgsqlCommand(updateSql, connection))
+                using (var connection = new NpgsqlConnection(_connectionString))
                 {
-                    command.Parameters.AddWithValue("@Name", category.Name);
-                    command.Parameters.AddWithValue("@Description", category.Description);
+                    await connection.OpenAsync(cancellationToken);
 
-                    int rowsAffected = command.ExecuteNonQuery();
+                    using (var command = new NpgsqlCommand(updateSql, connection))
+                    {
+                        command.Parameters.AddWithValue("@Name", category.Name);
+                        command.Parameters.AddWithValue("@Description", category.Description);
+                        command.Parameters.AddWithValue("@Id", category.Id);
 
-                    if (rowsAffected > 0)
-                    {
-                        return true;
-                    }
-                    else
-                    {
-                        return false;
+                        int rowsAffected = await command.ExecuteNonQueryAsync(cancellationToken);
+
+                        return rowsAffected > 0;
                     }
                 }
+            }
+            catch (OperationCanceledException)
+            {
+                Console.WriteLine("Operation was canceled.");
+                //TODO: Log error
+                throw;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error updating product category: {ex.Message}");
+                //TODO: Log error
+                throw;
             }
         }
     }

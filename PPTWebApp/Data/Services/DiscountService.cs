@@ -1,5 +1,8 @@
 ﻿using PPTWebApp.Data.Models;
 using PPTWebApp.Data.Repositories.Interfaces;
+using System.Threading;
+using System.Threading.Tasks;
+using System.Collections.Generic;
 
 namespace PPTWebApp.Data.Services
 {
@@ -12,65 +15,64 @@ namespace PPTWebApp.Data.Services
             _discountRepository = discountRepository ?? throw new ArgumentNullException(nameof(discountRepository));
         }
 
-        public int AddDiscount(Discount discount)
+        public async Task<int> AddDiscountAsync(Discount discount, CancellationToken cancellationToken)
         {
             if (discount == null)
             {
                 throw new ArgumentNullException(nameof(discount), "Discount cannot be null.");
             }
 
-            return _discountRepository.AddDiscount(discount);
+            return await _discountRepository.AddDiscountAsync(discount, cancellationToken);
         }
 
-        public Discount? GetDiscountById(int id)
+        public async Task<Discount?> GetDiscountByIdAsync(int id, CancellationToken cancellationToken)
         {
             if (id <= 0)
             {
                 throw new ArgumentException("Invalid discount ID.", nameof(id));
             }
 
-            return _discountRepository.GetDiscountById(id);
+            return await _discountRepository.GetDiscountByIdAsync(id, cancellationToken);
         }
 
-        public bool UpdateDiscount(Discount discount)
+        public async Task<bool> UpdateDiscountAsync(Discount discount, CancellationToken cancellationToken)
         {
             if (discount == null)
             {
                 throw new ArgumentNullException(nameof(discount), "Discount cannot be null.");
             }
 
-            return _discountRepository.UpdateDiscount(discount);
+            return await _discountRepository.UpdateDiscountAsync(discount, cancellationToken);
         }
 
-        public bool DeleteDiscount(int id)
+        public async Task<bool> DeleteDiscountAsync(int id, CancellationToken cancellationToken)
         {
             if (id <= 0)
             {
                 throw new ArgumentException("Invalid discount ID.", nameof(id));
             }
 
-            return _discountRepository.DeleteDiscount(id);
+            return await _discountRepository.DeleteDiscountAsync(id, cancellationToken);
         }
 
-        public IEnumerable<Discount> GetAllDiscountsInRange(string? keyword, int startIndex, int range)
+        public async Task<IEnumerable<Discount>> GetAllDiscountsInRangeAsync(string? keyword, int startIndex, int range, CancellationToken cancellationToken)
         {
-            return _discountRepository.GetAllDiscountsInRange(keyword, startIndex, range);
+            return await _discountRepository.GetAllDiscountsInRangeAsync(keyword, startIndex, range, cancellationToken);
         }
 
-        public IEnumerable<Discount> GetAllDiscountsInRange(string? keyword, bool isActive, int startIndex, int range)
+        public async Task<IEnumerable<Discount>> GetAllDiscountsInRangeAsync(string? keyword, bool isActive, int startIndex, int range, CancellationToken cancellationToken)
         {
-            return _discountRepository.GetAllDiscountsInRange(keyword, isActive, startIndex, range);
+            return await _discountRepository.GetAllDiscountsInRangeAsync(keyword, isActive, startIndex, range, cancellationToken);
         }
 
-        public int GetDiscountCount(string? keyword)
+        public async Task<int> GetDiscountCountAsync(string? keyword, CancellationToken cancellationToken)
         {
-            return _discountRepository.GetDiscountCount(keyword);
+            return await _discountRepository.GetDiscountCountAsync(keyword, cancellationToken);
         }
 
-        public int GetDiscountCount(string? keyword, bool isActive)
+        public async Task<int> GetDiscountCountAsync(string? keyword, bool isActive, CancellationToken cancellationToken)
         {
-            return _discountRepository.GetDiscountCount(keyword, isActive);
+            return await _discountRepository.GetDiscountCountAsync(keyword, isActive, cancellationToken);
         }
-
     }
 }

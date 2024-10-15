@@ -1,4 +1,5 @@
 ﻿using Npgsql;
+using System.Threading;
 
 public class OrderRepository : IOrderRepository
 {
@@ -9,13 +10,13 @@ public class OrderRepository : IOrderRepository
         _connectionString = connectionString ?? throw new ArgumentNullException(nameof(connectionString));
     }
 
-    public async Task<List<decimal>> GetDailySalesAsync(int daysBack)
+    public async Task<List<decimal>> GetDailySalesAsync(int daysBack, CancellationToken cancellationToken)
     {
         var dailySales = new List<decimal>();
 
         using (var connection = new NpgsqlConnection(_connectionString))
         {
-            await connection.OpenAsync();
+            await connection.OpenAsync(cancellationToken);
 
             // Create a series of dates and join with the actual sales data
             string query = $@"
@@ -39,9 +40,9 @@ public class OrderRepository : IOrderRepository
             {
                 command.Parameters.AddWithValue("@DaysBack", daysBack);
 
-                using (var reader = await command.ExecuteReaderAsync())
+                using (var reader = await command.ExecuteReaderAsync(cancellationToken))
                 {
-                    while (await reader.ReadAsync())
+                    while (await reader.ReadAsync(cancellationToken))
                     {
                         dailySales.Add(reader.GetDecimal(1));
                     }

@@ -13,127 +13,190 @@ namespace PPTWebApp.Data.Repositories
             _connectionString = connectionString ?? throw new ArgumentNullException(nameof(connectionString));
         }
 
-        public void CreateSession(Guid sessionId)
+        public async Task CreateSessionAsync(Guid sessionId, CancellationToken cancellationToken)
         {
-            using (var connection = new NpgsqlConnection(_connectionString))
+            cancellationToken.ThrowIfCancellationRequested();
+
+            try
             {
-                connection.Open();
-
-                string query = @"
-                    INSERT INTO visitorsessions (sessionid, startedat, endedat) 
-                    VALUES (@SessionId, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP + INTERVAL '16 hours')";
-
-                using (var command = new NpgsqlCommand(query, connection))
+                using (var connection = new NpgsqlConnection(_connectionString))
                 {
-                    command.Parameters.AddWithValue("@SessionId", sessionId);
-                    command.ExecuteNonQuery();
+                    await connection.OpenAsync(cancellationToken);
+
+                    string query = @"
+                INSERT INTO visitorsessions (sessionid, startedat, endedat) 
+                VALUES (@SessionId, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP + INTERVAL '16 hours')";
+
+                    using (var command = new NpgsqlCommand(query, connection))
+                    {
+                        command.Parameters.AddWithValue("@SessionId", sessionId);
+                        await command.ExecuteNonQueryAsync(cancellationToken);
+                    }
                 }
+            }
+            catch (OperationCanceledException)
+            {
+                Console.WriteLine("Operation was canceled.");
+                // TODO: Log error
+                throw;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error creating session: {ex.Message}");
+                // TODO: Log error
+                throw;
             }
         }
 
-        public async Task<List<int>> GetDailyVisitorCountsAsync(int daysBack)
+        public async Task<List<int>> GetDailyVisitorCountsAsync(int daysBack, CancellationToken cancellationToken)
         {
+            cancellationToken.ThrowIfCancellationRequested();
+
             var dailyVisitorCounts = new List<int>();
 
-            using (var connection = new NpgsqlConnection(_connectionString))
+            try
             {
-                await connection.OpenAsync();
-
-                string query = @"
-                    WITH date_series AS (
-                        SELECT 
-                            CURRENT_DATE - INTERVAL '1 day' * generate_series(0, @DaysBack - 1) AS day
-                    )
-                    SELECT 
-                        day, 
-                        COALESCE(COUNT(v.sessionid), 0) AS visitor_count
-                    FROM 
-                        date_series d
-                    LEFT JOIN 
-                        visitorsessions v ON d.day = v.startedat::date
-                    GROUP BY 
-                        day
-                    ORDER BY 
-                        day ASC";
-
-                using (var command = new NpgsqlCommand(query, connection))
+                using (var connection = new NpgsqlConnection(_connectionString))
                 {
-                    command.Parameters.AddWithValue("@DaysBack", daysBack);
+                    await connection.OpenAsync(cancellationToken);
 
-                    using (var reader = await command.ExecuteReaderAsync())
+                    string query = @"
+                        WITH date_series AS (
+                            SELECT 
+                                CURRENT_DATE - INTERVAL '1 day' * generate_series(0, @DaysBack - 1) AS day
+                        )
+                        SELECT 
+                            day, 
+                            COALESCE(COUNT(v.sessionid), 0) AS visitor_count
+                        FROM 
+                            date_series d
+                        LEFT JOIN 
+                            visitorsessions v ON d.day = v.startedat::date
+                        GROUP BY 
+                            day
+                        ORDER BY 
+                            day ASC";
+
+                    using (var command = new NpgsqlCommand(query, connection))
                     {
-                        while (await reader.ReadAsync())
+                        command.Parameters.AddWithValue("@DaysBack", daysBack);
+
+                        using (var reader = await command.ExecuteReaderAsync(cancellationToken))
                         {
-                            dailyVisitorCounts.Add(reader.GetInt32(1));
+                            while (await reader.ReadAsync(cancellationToken))
+                            {
+                                dailyVisitorCounts.Add(reader.GetInt32(1));
+                            }
                         }
                     }
                 }
+            }
+            catch (OperationCanceledException)
+            {
+                Console.WriteLine("Operation was canceled.");
+                // TODO: Log error
+                throw;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error retrieving daily visitor counts: {ex.Message}");
+                // TODO: Log error
+                throw;
             }
 
             return dailyVisitorCounts;
         }
 
-
-        public VisitorSession? GetSessionById(Guid sessionId)
+        public async Task<VisitorSession?> GetSessionByIdAsync(Guid sessionId, CancellationToken cancellationToken)
         {
+            cancellationToken.ThrowIfCancellationRequested();
+
             VisitorSession? session = null;
 
-            using (var connection = new NpgsqlConnection(_connectionString))
+            try
             {
-                connection.Open();
-
-                string query = @"
-                    SELECT id, sessionid, startedat, endedat 
-                    FROM visitorsessions 
-                    WHERE sessionid = @SessionId";
-
-                using (var command = new NpgsqlCommand(query, connection))
+                using (var connection = new NpgsqlConnection(_connectionString))
                 {
-                    command.Parameters.AddWithValue("@SessionId", sessionId);
+                    await connection.OpenAsync(cancellationToken);
 
-                    using (var reader = command.ExecuteReader())
+                    string query = @"
+                SELECT id, sessionid, startedat, endedat 
+                FROM visitorsessions 
+                WHERE sessionid = @SessionId";
+
+                    using (var command = new NpgsqlCommand(query, connection))
                     {
-                        if (reader.Read())
+                        command.Parameters.AddWithValue("@SessionId", sessionId);
+
+                        using (var reader = await command.ExecuteReaderAsync(cancellationToken))
                         {
-                            session = new VisitorSession
+                            if (await reader.ReadAsync(cancellationToken))
                             {
-                                Id = reader.GetInt32(0),
-                                SessionId = reader.GetGuid(1),
-                                StartedAt = reader.GetDateTime(2),
-                                EndedAt = reader.IsDBNull(3) ? (DateTime?)null : reader.GetDateTime(3)
-                            };
+                                session = new VisitorSession
+                                {
+                                    Id = reader.GetInt32(0),
+                                    SessionId = reader.GetGuid(1),
+                                    StartedAt = reader.GetDateTime(2),
+                                    EndedAt = reader.IsDBNull(3) ? (DateTime?)null : reader.GetDateTime(3)
+                                };
+                            }
                         }
                     }
                 }
+            }
+            catch (OperationCanceledException)
+            {
+                Console.WriteLine("Operation was canceled.");
+                // TODO: Log error
+                throw;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error retrieving session: {ex.Message}");
+                // TODO: Log error
+                throw;
             }
 
             return session;
         }
 
-        public bool IsSessionValid(Guid sessionId)
+        public async Task<bool> IsSessionValidAsync(Guid sessionId, CancellationToken cancellationToken)
         {
-            using (var connection = new NpgsqlConnection(_connectionString))
-            {
-                connection.Open();
-                string query = "SELECT endedat FROM visitorsessions WHERE sessionid = @SessionId";
-                using (var command = new NpgsqlCommand(query, connection))
-                {
-                    command.Parameters.AddWithValue("@SessionId", sessionId);
-                    var endedAt = command.ExecuteScalar() as DateTime?;
+            cancellationToken.ThrowIfCancellationRequested();
 
-                    if (!endedAt.HasValue)
+            try
+            {
+                using (var connection = new NpgsqlConnection(_connectionString))
+                {
+                    await connection.OpenAsync(cancellationToken);
+
+                    string query = "SELECT endedat FROM visitorsessions WHERE sessionid = @SessionId";
+                    using (var command = new NpgsqlCommand(query, connection))
                     {
-                        return false;
+                        command.Parameters.AddWithValue("@SessionId", sessionId);
+                        var endedAt = await command.ExecuteScalarAsync(cancellationToken) as DateTime?;
+
+                        if (!endedAt.HasValue || endedAt.Value <= DateTime.UtcNow)
+                        {
+                            return false;
+                        }
+
+                        return true;
                     }
-                    if (endedAt.Value <= DateTime.UtcNow)
-                    {
-                        return false;
-                    }
-                    return true;
                 }
             }
+            catch (OperationCanceledException)
+            {
+                Console.WriteLine("Operation was canceled.");
+                // TODO: Log error
+                throw;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error checking session validity: {ex.Message}");
+                // TODO: Log error
+                throw;
+            }
         }
-
-
     }
 }

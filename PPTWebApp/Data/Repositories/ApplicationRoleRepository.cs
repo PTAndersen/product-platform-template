@@ -36,7 +36,7 @@ namespace PPTWebApp.Data.Repositories
                 command.Parameters.AddWithValue("@Name", role.Name);
                 command.Parameters.AddWithValue("@NormalizedName", role.NormalizedName);
 
-                connection.Open();
+                await connection.OpenAsync(cancellationToken);
                 await command.ExecuteNonQueryAsync(cancellationToken);
             }
 
@@ -68,7 +68,7 @@ namespace PPTWebApp.Data.Repositories
                     command.Parameters.AddWithValue("@NormalizedRoleName", role.NormalizedName);
                     command.Parameters.AddWithValue("@RoleId", role.Id);
 
-                    connection.Open();
+                    await connection.OpenAsync(cancellationToken);
                     await command.ExecuteNonQueryAsync(cancellationToken);
                 }
 
@@ -93,7 +93,7 @@ namespace PPTWebApp.Data.Repositories
                     var command = new NpgsqlCommand("DELETE FROM aspnetroles WHERE id = @RoleId", connection);
                     command.Parameters.AddWithValue("@RoleId", role.Id);
 
-                    connection.Open();
+                    await connection.OpenAsync(cancellationToken);
                     await command.ExecuteNonQueryAsync(cancellationToken);
                 }
 
@@ -117,7 +117,7 @@ namespace PPTWebApp.Data.Repositories
                     var command = new NpgsqlCommand("SELECT id, name, normalizedname FROM aspnetroles WHERE id = @RoleId", connection);
                     command.Parameters.Add("@RoleId", NpgsqlTypes.NpgsqlDbType.Uuid).Value = Guid.Parse(roleId);
 
-                    connection.Open();
+                    await connection.OpenAsync(cancellationToken);
                     using (var reader = await command.ExecuteReaderAsync(CommandBehavior.SingleRow, cancellationToken))
                     {
                         if (await reader.ReadAsync(cancellationToken))
@@ -161,7 +161,7 @@ namespace PPTWebApp.Data.Repositories
                     var command = new NpgsqlCommand("SELECT id, name, normalizedname FROM aspnetroles WHERE normalizedname = @NormalizedRoleName", connection);
                     command.Parameters.AddWithValue("@NormalizedRoleName", normalizedRoleName);
 
-                    connection.Open();
+                    await connection.OpenAsync(cancellationToken);
                     using (var reader = await command.ExecuteReaderAsync(CommandBehavior.SingleRow, cancellationToken))
                     {
                         if (await reader.ReadAsync(cancellationToken))

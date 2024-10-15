@@ -4,8 +4,8 @@ namespace PPTWebApp.Data.Repositories.Interfaces
 {
     public interface IUserActivityRepository
     {
-        bool UpdateUserActivity(Guid userId);
-        UserActivity? GetLastActivity(int userId);
-        IEnumerable<UserActivity> GetActiveUsersWithin(TimeSpan timeSpan);
+        Task<bool> UpdateUserActivityAsync(Guid userId, CancellationToken cancellationToken);
+        Task<UserActivity?> GetLastActivityAsync(int userId, CancellationToken cancellationToken);
+        Task<IEnumerable<UserActivity>> GetActiveUsersWithinAsync(TimeSpan timeSpan, CancellationToken cancellationToken);
     }
 }

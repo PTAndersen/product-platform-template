@@ -29,15 +29,15 @@
 
     protected override async Task OnParametersSetAsync()
     {
-        await LoadPostContent();
+        await LoadPostContentAsync();
     }
 
-    private async Task LoadPostContent()
+    private async Task LoadPostContentAsync()
     {
         isLoading = true;
         try
         {
-            post = PostService.GetPostById(Id);
+            post = await PostService.GetPostByIdAsync(Id, CancellationToken.None);
 
             if (post == null)
             {

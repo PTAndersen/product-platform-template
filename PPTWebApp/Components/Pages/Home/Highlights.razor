@@ -10,7 +10,7 @@
 
     protected override async Task OnInitializedAsync()
     {
-        Products = HighlightService.GetHighlights().Take(maxProductsToDisplay).ToList();
+        Products = (await HighlightService.GetHighlightsAsync(CancellationToken.None)).Take(maxProductsToDisplay).ToList();
     }
 }
 

@@ -23,6 +23,6 @@
 
     protected override async Task OnInitializedAsync()
     {
-        posts = PostService.GetHighlightedPosts();
+        posts = await PostService.GetHighlightedPostsAsync(CancellationToken.None);
     }
 }

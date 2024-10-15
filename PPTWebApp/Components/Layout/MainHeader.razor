@@ -180,13 +180,13 @@
             sessionId = parsedSessionId;
         }
 
-        var validSessionId = VisitorSessionService.HandleSession(sessionId);
+        var validSessionId = await VisitorSessionService.HandleSessionAsync(sessionId, CancellationToken.None);
 
         await JSRuntime.InvokeAsync<object>("localStorage.setItem", new object[] { "visitorSessionId", validSessionId.ToString() });
 
         var pageUrl = NavigationManager.Uri;
         var referrer = await JSRuntime.InvokeAsync<string>("eval", "document.referrer");
-        await Task.Run(() => VisitorPageViewService.LogPageView(validSessionId, pageUrl, referrer));
+        await VisitorPageViewService.LogPageViewAsync(validSessionId, pageUrl, referrer, CancellationToken.None);
     }
 
 
@@ -201,17 +201,17 @@
 
             if (userIdClaim != null && Guid.TryParse(userIdClaim.Value, out Guid userId))
             {
-                var success = await Task.Run(() => UserActivityService.UpdateUserActivity(userId));
+                var success = await UserActivityService.UpdateUserActivityAsync(userId, CancellationToken.None);
 
                 if (!success)
                 {
-                    await HandleFailedUserActivityUpdate();
+                    await HandleFailedUserActivityUpdateAsync();
                 }
             }
         }
     }
 
-    private async Task HandleFailedUserActivityUpdate()
+    private async Task HandleFailedUserActivityUpdateAsync()
     {
         await JSRuntime.InvokeVoidAsync("localStorage.removeItem", "userSessionId");
         NavigationManager.NavigateTo("/account/login");

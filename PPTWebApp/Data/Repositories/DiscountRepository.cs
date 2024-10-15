@@ -13,275 +13,398 @@ namespace PPTWebApp.Data.Repositories
             _connectionString = connectionString;
         }
 
-        public IEnumerable<Discount> GetAllDiscountsInRange(string? keyword, int startIndex, int range)
+        public async Task<IEnumerable<Discount>> GetAllDiscountsInRangeAsync(string? keyword, int startIndex, int range, CancellationToken cancellationToken)
         {
+            cancellationToken.ThrowIfCancellationRequested();
             var discounts = new List<Discount>();
 
-            using (var connection = new NpgsqlConnection(_connectionString))
+            try
             {
-                connection.Open();
+                using (var connection = new NpgsqlConnection(_connectionString))
+                {
+                    await connection.OpenAsync(cancellationToken);
 
-                string query = @"
+                    string query = @"
                     SELECT id, name, description, discountpercent, active
                     FROM discounts"
-                            + (string.IsNullOrEmpty(keyword) ? "" : " WHERE name ILIKE '%' || @Keyword || '%'") +
-                            @" ORDER BY id 
+                    + (string.IsNullOrEmpty(keyword) ? "" : " WHERE name ILIKE '%' || @Keyword || '%'") +
+                    @" ORDER BY id 
                     OFFSET @StartIndex LIMIT @Range";
 
-                using (var command = new NpgsqlCommand(query, connection))
-                {
-                    if (!string.IsNullOrEmpty(keyword))
+                    using (var command = new NpgsqlCommand(query, connection))
                     {
-                        command.Parameters.AddWithValue("@Keyword", keyword);
-                    }
-                    command.Parameters.AddWithValue("@StartIndex", startIndex);
-                    command.Parameters.AddWithValue("@Range", range);
-
-                    using (var reader = command.ExecuteReader())
-                    {
-                        while (reader.Read())
+                        if (!string.IsNullOrEmpty(keyword))
                         {
-                            discounts.Add(new Discount
+                            command.Parameters.AddWithValue("@Keyword", keyword);
+                        }
+                        command.Parameters.AddWithValue("@StartIndex", startIndex);
+                        command.Parameters.AddWithValue("@Range", range);
+
+                        using (var reader = await command.ExecuteReaderAsync(cancellationToken))
+                        {
+                            while (await reader.ReadAsync())
                             {
-                                Id = reader.GetInt32(reader.GetOrdinal("id")),
-                                Name = reader.GetString(reader.GetOrdinal("name")),
-                                Description = reader.GetString(reader.GetOrdinal("description")),
-                                DiscountPercent = reader.GetDecimal(reader.GetOrdinal("discountpercent")),
-                                IsActive = reader.GetBoolean(reader.GetOrdinal("active"))
-                            });
+                                discounts.Add(new Discount
+                                {
+                                    Id = reader.GetInt32(reader.GetOrdinal("id")),
+                                    Name = reader.GetString(reader.GetOrdinal("name")),
+                                    Description = reader.GetString(reader.GetOrdinal("description")),
+                                    DiscountPercent = reader.GetDecimal(reader.GetOrdinal("discountpercent")),
+                                    IsActive = reader.GetBoolean(reader.GetOrdinal("active"))
+                                });
+                            }
                         }
                     }
                 }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error getting all discounts in range: {ex.Message}");
+                //TODO: Log error
             }
 
             return discounts;
         }
 
-        public IEnumerable<Discount> GetAllDiscountsInRange(string? keyword, bool isActive, int startIndex, int range)
+        public async Task<IEnumerable<Discount>> GetAllDiscountsInRangeAsync(string? keyword, bool isActive, int startIndex, int range, CancellationToken cancellationToken)
         {
+            cancellationToken.ThrowIfCancellationRequested();
+
             var discounts = new List<Discount>();
 
-            using (var connection = new NpgsqlConnection(_connectionString))
+            try
             {
-                connection.Open();
-
-                string query = @"
-                    SELECT id, name, description, discountpercent, active
-                    FROM discounts
-                    WHERE active = @IsActive"
-                            + (string.IsNullOrEmpty(keyword) ? "" : " AND name ILIKE '%' || @Keyword || '%'") +
-                            @" ORDER BY id 
-                    OFFSET @StartIndex LIMIT @Range";
-
-                using (var command = new NpgsqlCommand(query, connection))
+                using (var connection = new NpgsqlConnection(_connectionString))
                 {
-                    command.Parameters.AddWithValue("@IsActive", isActive);
+                    await connection.OpenAsync(cancellationToken);
 
-                    if (!string.IsNullOrEmpty(keyword))
+                    string query = @"
+                        SELECT id, name, description, discountpercent, active
+                        FROM discounts
+                        WHERE active = @IsActive"
+                        + (string.IsNullOrEmpty(keyword) ? "" : " AND name ILIKE '%' || @Keyword || '%'") +
+                        @" ORDER BY id 
+                        OFFSET @StartIndex LIMIT @Range";
+
+                    using (var command = new NpgsqlCommand(query, connection))
                     {
-                        command.Parameters.AddWithValue("@Keyword", keyword);
-                    }
+                        command.Parameters.AddWithValue("@IsActive", isActive);
 
-                    command.Parameters.AddWithValue("@StartIndex", startIndex);
-                    command.Parameters.AddWithValue("@Range", range);
-
-                    using (var reader = command.ExecuteReader())
-                    {
-                        while (reader.Read())
+                        if (!string.IsNullOrEmpty(keyword))
                         {
-                            discounts.Add(new Discount
+                            command.Parameters.AddWithValue("@Keyword", keyword);
+                        }
+
+                        command.Parameters.AddWithValue("@StartIndex", startIndex);
+                        command.Parameters.AddWithValue("@Range", range);
+
+                        using (var reader = await command.ExecuteReaderAsync(cancellationToken))
+                        {
+                            while (await reader.ReadAsync(cancellationToken))
                             {
-                                Id = reader.GetInt32(reader.GetOrdinal("id")),
-                                Name = reader.GetString(reader.GetOrdinal("name")),
-                                Description = reader.GetString(reader.GetOrdinal("description")),
-                                DiscountPercent = reader.GetDecimal(reader.GetOrdinal("discountpercent")),
-                                IsActive = reader.GetBoolean(reader.GetOrdinal("active"))
-                            });
+                                discounts.Add(new Discount
+                                {
+                                    Id = reader.GetInt32(reader.GetOrdinal("id")),
+                                    Name = reader.GetString(reader.GetOrdinal("name")),
+                                    Description = reader.GetString(reader.GetOrdinal("description")),
+                                    DiscountPercent = reader.GetDecimal(reader.GetOrdinal("discountpercent")),
+                                    IsActive = reader.GetBoolean(reader.GetOrdinal("active"))
+                                });
+                            }
                         }
                     }
                 }
+            }
+            catch (OperationCanceledException)
+            {
+                Console.WriteLine("Operation was canceled.");
+                //TODO: Log error
+                throw;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error getting all discounts in range: {ex.Message}");
+                //TODO: Log error
             }
 
             return discounts;
         }
 
-        public int GetDiscountCount(string? keyword)
+
+        public async Task<int> GetDiscountCountAsync(string? keyword, CancellationToken cancellationToken)
         {
-            string query = @"
-                SELECT COUNT(*)
-                FROM discounts"
-                + (string.IsNullOrEmpty(keyword) ? "" : " WHERE name ILIKE '%' || @Keyword || '%'");
-
-            using (var connection = new NpgsqlConnection(_connectionString))
+            try
             {
-                connection.Open();
+                cancellationToken.ThrowIfCancellationRequested();
 
-                using (var command = new NpgsqlCommand(query, connection))
+                string query = @"
+                    SELECT COUNT(*)
+                    FROM discounts"
+                    + (string.IsNullOrEmpty(keyword) ? "" : " WHERE name ILIKE '%' || @Keyword || '%'");
+
+                using (var connection = new NpgsqlConnection(_connectionString))
                 {
-                    if (!string.IsNullOrEmpty(keyword))
-                    {
-                        command.Parameters.AddWithValue("@Keyword", keyword);
-                    }
+                    await connection.OpenAsync(cancellationToken);
 
-                    return Convert.ToInt32(command.ExecuteScalar());
+                    using (var command = new NpgsqlCommand(query, connection))
+                    {
+                        if (!string.IsNullOrEmpty(keyword))
+                        {
+                            command.Parameters.AddWithValue("@Keyword", keyword);
+                        }
+
+                        var result = await command.ExecuteScalarAsync(cancellationToken);
+                        return Convert.ToInt32(result);
+                    }
                 }
+            }
+            catch (OperationCanceledException)
+            {
+                Console.WriteLine("Operation was canceled.");
+                //TODO: Log error
+                throw;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"An error occurred: {ex.Message}");
+                //TODO: Log error
+                throw;
             }
         }
 
-        public int GetDiscountCount(string? keyword, bool isActive)
+
+        public async Task<int> GetDiscountCountAsync(string? keyword, bool isActive, CancellationToken cancellationToken)
         {
+            cancellationToken.ThrowIfCancellationRequested();
+
             string query = @"
                 SELECT COUNT(*)
                 FROM discounts
                 WHERE active = @IsActive"
                 + (string.IsNullOrEmpty(keyword) ? "" : " AND name ILIKE '%' || @Keyword || '%'");
 
-            using (var connection = new NpgsqlConnection(_connectionString))
+            try
             {
-                connection.Open();
-
-                using (var command = new NpgsqlCommand(query, connection))
+                using (var connection = new NpgsqlConnection(_connectionString))
                 {
-                    command.Parameters.AddWithValue("@IsActive", isActive);
+                    await connection.OpenAsync(cancellationToken);
 
-                    if (!string.IsNullOrEmpty(keyword))
+                    using (var command = new NpgsqlCommand(query, connection))
                     {
-                        command.Parameters.AddWithValue("@Keyword", keyword);
-                    }
+                        command.Parameters.AddWithValue("@IsActive", isActive);
 
-                    return Convert.ToInt32(command.ExecuteScalar());
+                        if (!string.IsNullOrEmpty(keyword))
+                        {
+                            command.Parameters.AddWithValue("@Keyword", keyword);
+                        }
+
+                        var result = await command.ExecuteScalarAsync(cancellationToken);
+                        return Convert.ToInt32(result);
+                    }
                 }
+            }
+            catch (OperationCanceledException)
+            {
+                Console.WriteLine("Operation was canceled.");
+                //TODO: Log error
+                throw;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error getting all discounts in range: {ex.Message}");
+                //TODO: Log error
+                throw;
             }
         }
 
-        public int AddDiscount(Discount discount)
+
+        public async Task<int> AddDiscountAsync(Discount discount, CancellationToken cancellationToken)
         {
+            cancellationToken.ThrowIfCancellationRequested();
+
             if (discount == null) throw new ArgumentNullException(nameof(discount), "Discount cannot be null.");
 
             string insertSql = @"INSERT INTO discounts (name, description, discountpercent, active)
                                 VALUES (@Name, @Description, @Discountpercent, @Active)
                                 RETURNING id;";
 
-            using (var connection = new NpgsqlConnection(_connectionString))
+            try
             {
-                connection.Open();
-
-                using (var command = new NpgsqlCommand(insertSql, connection))
+                using (var connection = new NpgsqlConnection(_connectionString))
                 {
-                    command.Parameters.AddWithValue("@Name", discount.Name);
-                    command.Parameters.AddWithValue("@Description", discount.Description);
-                    command.Parameters.AddWithValue("@Discountpercent", discount.DiscountPercent);
-                    command.Parameters.AddWithValue("@Active", discount.IsActive);
+                    await connection.OpenAsync(cancellationToken);
 
-                    object? result = command.ExecuteScalar();
-                    int? newId = result as int?;
-
-                    if (newId == null)
+                    using (var command = new NpgsqlCommand(insertSql, connection))
                     {
-                        throw new InvalidOperationException("Failed to insert record or retrieve the new ID.");
-                    }
+                        command.Parameters.AddWithValue("@Name", discount.Name);
+                        command.Parameters.AddWithValue("@Description", discount.Description);
+                        command.Parameters.AddWithValue("@Discountpercent", discount.DiscountPercent);
+                        command.Parameters.AddWithValue("@Active", discount.IsActive);
 
-                    return newId.Value;
+                        object? result = await command.ExecuteScalarAsync(cancellationToken);
+                        int? newId = result as int?;
+
+                        if (newId == null)
+                        {
+                            throw new InvalidOperationException("Failed to insert record or retrieve the new ID.");
+                        }
+
+                        return newId.Value;
+                    }
                 }
+            }
+            catch (OperationCanceledException)
+            {
+                Console.WriteLine("Operation was canceled.");
+                //TODO: Log error
+                throw;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error getting all discounts in range: {ex.Message}");
+                //TODO: Log error
+                throw;
             }
         }
 
-        public bool DeleteDiscount(int id)
+
+        public async Task<bool> DeleteDiscountAsync(int id, CancellationToken cancellationToken)
         {
+            cancellationToken.ThrowIfCancellationRequested();
+
             string deleteSql = @"DELETE FROM discounts WHERE id = @Id;";
 
-            using (var connection = new NpgsqlConnection(_connectionString))
+            try
             {
-                connection.Open();
-
-                using (var command = new NpgsqlCommand(deleteSql, connection))
+                using (var connection = new NpgsqlConnection(_connectionString))
                 {
-                    command.Parameters.AddWithValue("@Id", id);
+                    await connection.OpenAsync(cancellationToken);
 
-                    int rowsAffected = command.ExecuteNonQuery();
+                    using (var command = new NpgsqlCommand(deleteSql, connection))
+                    {
+                        command.Parameters.AddWithValue("@Id", id);
 
-                    if (rowsAffected > 0)
-                    {
-                        return true;
-                    }
-                    else
-                    {
-                        return false;
+                        int rowsAffected = await command.ExecuteNonQueryAsync(cancellationToken);
+
+                        return rowsAffected > 0;
                     }
                 }
             }
+            catch (OperationCanceledException)
+            {
+                Console.WriteLine("Operation was canceled.");
+                //TODO: Log error
+                throw;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error getting all discounts in range: {ex.Message}");
+                //TODO: Log error
+                throw;
+            }
         }
 
-        public Discount? GetDiscountById(int id)
+
+        public async Task<Discount?> GetDiscountByIdAsync(int id, CancellationToken cancellationToken)
         {
-            string selectSql = @"SELECT id, name, description, discountpercent, active WHERE id = @Id;";
+            cancellationToken.ThrowIfCancellationRequested();
 
-            using (var connection = new NpgsqlConnection(_connectionString))
+            string selectSql = @"SELECT id, name, description, discountpercent, active FROM discounts WHERE id = @Id;";
+
+            try
             {
-                connection.Open();
-
-                using (var command = new NpgsqlCommand(selectSql, connection))
+                using (var connection = new NpgsqlConnection(_connectionString))
                 {
-                    command.Parameters.AddWithValue("@Id", id);
+                    await connection.OpenAsync(cancellationToken);
 
-                    using (var reader = command.ExecuteReader())
+                    using (var command = new NpgsqlCommand(selectSql, connection))
                     {
-                        if (reader.Read())
+                        command.Parameters.AddWithValue("@Id", id);
+
+                        using (var reader = await command.ExecuteReaderAsync(cancellationToken))
                         {
-                            var discount = new Discount
+                            if (await reader.ReadAsync(cancellationToken))
                             {
-                                Id = reader.GetInt32(reader.GetOrdinal("id")),
-                                Name = reader.GetString(reader.GetOrdinal("name")),
-                                Description = reader.GetString(reader.GetOrdinal("description")),
-                                DiscountPercent = reader.GetDecimal(reader.GetOrdinal("discountpercent")),
-                                IsActive = reader.GetBoolean(reader.GetOrdinal("active"))
-                            };
+                                var discount = new Discount
+                                {
+                                    Id = reader.GetInt32(reader.GetOrdinal("id")),
+                                    Name = reader.GetString(reader.GetOrdinal("name")),
+                                    Description = reader.GetString(reader.GetOrdinal("description")),
+                                    DiscountPercent = reader.GetDecimal(reader.GetOrdinal("discountpercent")),
+                                    IsActive = reader.GetBoolean(reader.GetOrdinal("active"))
+                                };
 
-                            return discount;
-                        }
-                        else
-                        {
-                            return null;
+                                return discount;
+                            }
+                            else
+                            {
+                                return null;
+                            }
                         }
                     }
                 }
             }
+            catch (OperationCanceledException)
+            {
+                Console.WriteLine("Operation was canceled.");
+                //TODO: Log error
+                throw;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error getting all discounts in range: {ex.Message}");
+                //TODO: Log error
+                throw;
+            }
         }
 
-        public bool UpdateDiscount(Discount discount)
+
+        public async Task<bool> UpdateDiscountAsync(Discount discount, CancellationToken cancellationToken)
         {
+            cancellationToken.ThrowIfCancellationRequested();
+
             if (discount == null) throw new ArgumentNullException(nameof(discount), "Discount cannot be null.");
 
             string updateSql = @"UPDATE discounts
-                                SET name = @Name,
-                                    description = @Description,
-                                    discountpercent = @Discountpercent,
-                                    active = @Active
-                                WHERE id = @Id;";
-            
-            using (var connection = new NpgsqlConnection(_connectionString))
+                        SET name = @Name,
+                            description = @Description,
+                            discountpercent = @Discountpercent,
+                            active = @Active
+                        WHERE id = @Id;";
+
+            try
             {
-                connection.Open();
-
-                using (var command = new NpgsqlCommand(updateSql, connection))
+                using (var connection = new NpgsqlConnection(_connectionString))
                 {
-                    command.Parameters.AddWithValue("@Name", discount.Name);
-                    command.Parameters.AddWithValue("@Description", discount.Description);
-                    command.Parameters.AddWithValue("@Discountpercent", discount.DiscountPercent);
-                    command.Parameters.AddWithValue("@Active", discount.IsActive);
+                    await connection.OpenAsync(cancellationToken);
 
-                    int rowsAffected = command.ExecuteNonQuery();
+                    using (var command = new NpgsqlCommand(updateSql, connection))
+                    {
+                        command.Parameters.AddWithValue("@Name", discount.Name);
+                        command.Parameters.AddWithValue("@Description", discount.Description);
+                        command.Parameters.AddWithValue("@Discountpercent", discount.DiscountPercent);
+                        command.Parameters.AddWithValue("@Active", discount.IsActive);
+                        command.Parameters.AddWithValue("@Id", discount.Id);
 
-                    if (rowsAffected > 0)
-                    {
-                        return true;
-                    }
-                    else
-                    {
-                        return false;
+                        int rowsAffected = await command.ExecuteNonQueryAsync(cancellationToken);
+
+                        return rowsAffected > 0;
                     }
                 }
             }
+            catch (OperationCanceledException)
+            {
+                Console.WriteLine("Operation was canceled.");
+                //TODO: Log error
+                throw;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error getting all discounts in range: {ex.Message}");
+                //TODO: Log error
+                throw;
+            }
         }
+
     }
 }

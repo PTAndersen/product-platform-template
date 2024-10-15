@@ -26,52 +26,52 @@
 
     protected override async Task OnInitializedAsync()
     {
-        ProductCategories = ProductCategoryService.GetAllCategories().ToList();
+        ProductCategories = (await ProductCategoryService.GetAllCategoriesAsync(CancellationToken.None)).ToList();
 
-        TotalProducts = ProductService.GetTotalProductCount(SelectedCategory, searchInput, MinPrice, MaxPrice);
+        TotalProducts = await ProductService.GetTotalProductCountAsync(SelectedCategory, searchInput, MinPrice, MaxPrice, CancellationToken.None);
 
-        LoadProducts();
+        await LoadProductsAsync();
     }
 
-    private void LoadProducts()
+    private async Task LoadProductsAsync()
     {
-        TotalProducts = ProductService.GetTotalProductCount(SelectedCategory, searchInput, MinPrice, MaxPrice);
+        TotalProducts = await ProductService.GetTotalProductCountAsync(SelectedCategory, searchInput, MinPrice, MaxPrice, CancellationToken.None);
         switch (SortBy)
         {
             case "Cheapest First":
-                Products = ProductService.GetCheapestProducts(SelectedCategory, MinPrice, MaxPrice, PageIndex * MaxProductsToDisplay, MaxProductsToDisplay).ToList();
+                Products = (await ProductService.GetCheapestProductsAsync(SelectedCategory, MinPrice, MaxPrice, PageIndex * MaxProductsToDisplay, MaxProductsToDisplay, CancellationToken.None)).ToList();
                 break;
             case "Most Expensive First":
-                Products = ProductService.GetMostExpensiveProducts(SelectedCategory, MinPrice, MaxPrice, PageIndex * MaxProductsToDisplay, MaxProductsToDisplay).ToList();
+                Products = (await ProductService.GetMostExpensiveProductsAsync(SelectedCategory, MinPrice, MaxPrice, PageIndex * MaxProductsToDisplay, MaxProductsToDisplay, CancellationToken.None)).ToList();
                 break;
             case "Search Results":
-                Products = ProductService.SearchProducts(SelectedCategory, searchInput, MinPrice, MaxPrice, PageIndex * MaxProductsToDisplay, MaxProductsToDisplay).ToList();
+                Products = (await ProductService.SearchProductsAsync(SelectedCategory, searchInput, MinPrice, MaxPrice, PageIndex * MaxProductsToDisplay, MaxProductsToDisplay, CancellationToken.None)).ToList();
                 break;
             default:
-                Products = ProductService.GetBestsellers(SelectedCategory, MinPrice, MaxPrice, PageIndex * MaxProductsToDisplay, MaxProductsToDisplay).ToList();
+                Products = (await ProductService.GetBestsellersAsync(SelectedCategory, MinPrice, MaxPrice, PageIndex * MaxProductsToDisplay, MaxProductsToDisplay, CancellationToken.None)).ToList();
                 break;
         }
     }
 
-    private void LoadNextPage()
+    private async Task LoadNextPageAsync()
     {
         if (PageIndex < TotalPages - 1)
         {
             PageIndex++;
-            LoadProducts();
+            await LoadProductsAsync();
         }
     }
 
-    private void LoadPreviousPage()
+    private async Task LoadPreviousPage()
     {
         if (PageIndex > 0)
         {
             PageIndex--;
-            LoadProducts();
+            await LoadProductsAsync();
         }
     }
 
-    private void OnPageInputChange(ChangeEventArgs e)
+    private async Task OnPageInputChangeAsync(ChangeEventArgs e)
     {
         if (e.Value != null && int.TryParse(e.Value.ToString(), out var inputPage))
         {
@@ -83,10 +83,10 @@
         }
 
         PageIndex = inputPage - 1;
-        LoadProducts();
+        await LoadProductsAsync();
     }
 
-    private void OnCategoryChange(ChangeEventArgs e)
+    private async Task OnCategoryChangeAsync(ChangeEventArgs e)
     {
         if (e.Value != null && int.TryParse(e.Value.ToString(), out var selectedCategoryId))
         {
@@ -99,36 +99,36 @@
 
         PageIndex = 0;
         searchInput = "";
-        LoadProducts();
+        await LoadProductsAsync();
     }
 
-    private void OnMinPriceChange(ChangeEventArgs e)
+    private async Task OnMinPriceChangeAsync(ChangeEventArgs e)
     {
         MinPrice = e.Value != null && decimal.TryParse(e.Value.ToString(), out var result) ? result : 0;
         PageIndex = 0;
-        LoadProducts();
+        await LoadProductsAsync();
     }
 
-    private void OnMaxPriceChange(ChangeEventArgs e)
+    private async Task OnMaxPriceChangeAsync(ChangeEventArgs e)
     {
         MaxPrice = e.Value != null && decimal.TryParse(e.Value.ToString(), out var result) ? result : 1000;
         PageIndex = 0;
-        LoadProducts();
+        await LoadProductsAsync();
     }
 
-    private void OnSortByChange(ChangeEventArgs e)
+    private async Task OnSortByChangeAsync(ChangeEventArgs e)
     {
         SortBy = e.Value?.ToString() ?? string.Empty;
         PageIndex = 0;
-        LoadProducts();
+        await LoadProductsAsync();
     }
 
-    private void OnSearchInputChange(ChangeEventArgs e)
+    private async Task OnSearchInputChangeAsync(ChangeEventArgs e)
     {
         searchInput = e.Value?.ToString() ?? string.Empty;
         SortBy = "Search Results";
         PageIndex = 0;
-        LoadProducts();
+        await LoadProductsAsync();
     }
 }
 
@@ -142,11 +142,11 @@
             <div class="row gx-3">
                 <div class="col-md-2 mb-2">
                     <input type="text" placeholder="Search products..." class="form-control"
-                           @bind="searchInput" @oninput="OnSearchInputChange" />
+                           @bind="searchInput" @oninput="OnSearchInputChangeAsync" />
                 </div>
 
                 <div class="col-md-2 mb-2">
-                    <select class="form-select" @onchange="OnSortByChange">
+                    <select class="form-select" @onchange="OnSortByChangeAsync">
                         @foreach (var option in SortByOptions)
                         {
                             <option value="@option" selected="@(option == SortBy)">@option</option>
@@ -156,13 +156,13 @@
 
                 <div class="col-md-3 mb-2 d-flex align-items-center">
                     <label for="priceRange" class="me-2">Price Range:</label>
-                    <input type="number" id="minPriceInput" min="0" max="1000000" value="@MinPrice" class="form-control w-25" @onchange="OnMinPriceChange" />
+                    <input type="number" id="minPriceInput" min="0" max="1000000" value="@MinPrice" class="form-control w-25" @onchange="OnMinPriceChangeAsync" />
                     <span class="mx-2">to</span>
-                    <input type="number" id="maxPriceInput" min="0" max="1000000" value="@MaxPrice" class="form-control w-25" @onchange="OnMaxPriceChange" />
+                    <input type="number" id="maxPriceInput" min="0" max="1000000" value="@MaxPrice" class="form-control w-25" @onchange="OnMaxPriceChangeAsync" />
                 </div>
 
                 <div class="col-md-2 mb-2">
-                    <select class="form-select" @onchange="OnCategoryChange">
+                    <select class="form-select" @onchange="OnCategoryChangeAsync">
                         <option value="0">All Categories</option>
                         @foreach (var category in ProductCategories)
                         {
@@ -197,8 +197,8 @@
     <div class="pagination">
         <button class="pagination-btn" @onclick="LoadPreviousPage" disabled="@((PageIndex == 0))">←</button>
         <span class="pagination-text">Page</span>
-        <input type="number" value="@(PageIndex + 1)" min="1" max="@TotalPages" class="page-input" @onchange="OnPageInputChange" />
+        <input type="number" value="@(PageIndex + 1)" min="1" max="@TotalPages" class="page-input" @onchange="OnPageInputChangeAsync" />
         <span class="pagination-text">of @TotalPages</span>
-        <button class="pagination-btn" @onclick="LoadNextPage" disabled="@((PageIndex == TotalPages - 1))">→</button>
+        <button class="pagination-btn" @onclick="LoadNextPageAsync" disabled="@((PageIndex == TotalPages - 1))">→</button>
     </div>
 </div>

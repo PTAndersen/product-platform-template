@@ -1,6 +1,8 @@
 ﻿using PPTWebApp.Data.Models;
 using PPTWebApp.Data.Repositories.Interfaces;
-using static Microsoft.Extensions.Logging.EventSource.LoggingEventSource;
+using System.Collections.Generic;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace PPTWebApp.Data.Services
 {
@@ -13,69 +15,70 @@ namespace PPTWebApp.Data.Services
             _productRepository = productRepository;
         }
 
-        public IEnumerable<Product> GetHighlightedProducts(int range)
+        public async Task<IEnumerable<Product>> GetHighlightedProductsAsync(int range, CancellationToken cancellationToken)
         {
-            return _productRepository.GetBestsellers(null, 0, 100000, 0, range);
+            return await _productRepository.GetBestsellersAsync(null, 0, 100000, 0, range, cancellationToken);
         }
 
-        public IEnumerable<Product> GetAllProducts()
+        public async Task<IEnumerable<Product>> GetAllProductsAsync(CancellationToken cancellationToken)
         {
-            return _productRepository.GetBestsellers(null, 0, 100000, 0, GetTotalProductCount(null, "", 0, 100000));
+            int totalCount = await GetTotalProductCountAsync(null, "", 0, 100000, cancellationToken);
+            return await _productRepository.GetBestsellersAsync(null, 0, 100000, 0, totalCount, cancellationToken);
         }
 
-        public IEnumerable<Product> GetBestsellers(ProductCategory? productCategory, decimal minPrice, decimal maxPrice, int startIndex, int range)
+        public async Task<IEnumerable<Product>> GetBestsellersAsync(ProductCategory? productCategory, decimal minPrice, decimal maxPrice, int startIndex, int range, CancellationToken cancellationToken)
         {
-            return _productRepository.GetBestsellers(productCategory, minPrice, maxPrice, startIndex, range);
+            return await _productRepository.GetBestsellersAsync(productCategory, minPrice, maxPrice, startIndex, range, cancellationToken);
         }
 
-        public IEnumerable<Product> GetCheapestProducts(ProductCategory? productCategory, decimal minPrice, decimal maxPrice, int startIndex, int range)
+        public async Task<IEnumerable<Product>> GetCheapestProductsAsync(ProductCategory? productCategory, decimal minPrice, decimal maxPrice, int startIndex, int range, CancellationToken cancellationToken)
         {
-            return _productRepository.GetCheapestProducts(productCategory, minPrice, maxPrice, startIndex, range);
+            return await _productRepository.GetCheapestProductsAsync(productCategory, minPrice, maxPrice, startIndex, range, cancellationToken);
         }
 
-        public IEnumerable<Product> GetMostExpensiveProducts(ProductCategory? productCategory, decimal minPrice, decimal maxPrice, int startIndex, int range)
+        public async Task<IEnumerable<Product>> GetMostExpensiveProductsAsync(ProductCategory? productCategory, decimal minPrice, decimal maxPrice, int startIndex, int range, CancellationToken cancellationToken)
         {
-            return _productRepository.GetMostExpensiveProducts(productCategory, minPrice, maxPrice, startIndex, range);
+            return await _productRepository.GetMostExpensiveProductsAsync(productCategory, minPrice, maxPrice, startIndex, range, cancellationToken);
         }
 
-        public IEnumerable<Product> SearchProducts(ProductCategory? productCategory, string keyword, decimal minPrice, decimal maxPrice, int startIndex, int range)
+        public async Task<IEnumerable<Product>> SearchProductsAsync(ProductCategory? productCategory, string keyword, decimal minPrice, decimal maxPrice, int startIndex, int range, CancellationToken cancellationToken)
         {
-            return _productRepository.SearchProducts(productCategory, keyword, minPrice, maxPrice, startIndex, range);
+            return await _productRepository.SearchProductsAsync(productCategory, keyword, minPrice, maxPrice, startIndex, range, cancellationToken);
         }
 
-        public IEnumerable<Product> GetProductsInRange(int startIndex, int range)
+        public async Task<IEnumerable<Product>> GetProductsInRangeAsync(int startIndex, int range, CancellationToken cancellationToken)
         {
-            return _productRepository.GetBestsellers(null, 0, 100000, startIndex, range);
+            return await _productRepository.GetBestsellersAsync(null, 0, 100000, startIndex, range, cancellationToken);
         }
 
-        public int GetTotalProductCount(ProductCategory? category, string keyword, decimal minPrice, decimal maxPrice)
+        public async Task<int> GetTotalProductCountAsync(ProductCategory? category, string keyword, decimal minPrice, decimal maxPrice, CancellationToken cancellationToken)
         {
-            return _productRepository.GetTotalProductCount(category, keyword, minPrice, maxPrice);
+            return await _productRepository.GetTotalProductCountAsync(category, keyword, minPrice, maxPrice, cancellationToken);
         }
 
-        public Product? GetProductById(int id)
+        public async Task<Product?> GetProductByIdAsync(int id, CancellationToken cancellationToken)
         {
-            return _productRepository.GetProductById(id);
+            return await _productRepository.GetProductByIdAsync(id, cancellationToken);
         }
 
-        public void AddProduct(Product product)
+        public async Task AddProductAsync(Product product, CancellationToken cancellationToken)
         {
-            _productRepository.AddProduct(product);
+            await _productRepository.AddProductAsync(product, cancellationToken);
         }
 
-        public void UpdateProduct(Product product)
+        public async Task UpdateProductAsync(Product product, CancellationToken cancellationToken)
         {
-            _productRepository.UpdateProduct(product);
+            await _productRepository.UpdateProductAsync(product, cancellationToken);
         }
 
-        public void DeleteProduct(int id)
+        public async Task DeleteProductAsync(int id, CancellationToken cancellationToken)
         {
-            _productRepository.DeleteProduct(id);
+            await _productRepository.DeleteProductAsync(id, cancellationToken);
         }
 
-        public async Task<List<(int Sales, Product Product)>> GetTopSellingProductsAsync(int topProductsCount)
+        public async Task<List<(int Sales, Product Product)>> GetTopSellingProductsAsync(int topProductsCount, CancellationToken cancellationToken)
         {
-            return await _productRepository.GetTopSellingProductsAsync(topProductsCount);
+            return await _productRepository.GetTopSellingProductsAsync(topProductsCount, cancellationToken);
         }
     }
 }

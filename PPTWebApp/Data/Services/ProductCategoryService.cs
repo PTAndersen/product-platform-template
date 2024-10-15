@@ -1,5 +1,8 @@
 ﻿using PPTWebApp.Data.Models;
 using PPTWebApp.Data.Repositories.Interfaces;
+using System.Collections.Generic;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace PPTWebApp.Data.Services
 {
@@ -12,39 +15,39 @@ namespace PPTWebApp.Data.Services
             _productCategoryRepository = productCategoryRepository ?? throw new ArgumentNullException(nameof(productCategoryRepository));
         }
 
-        public IEnumerable<ProductCategory> GetAllCategories()
+        public async Task<IEnumerable<ProductCategory>> GetAllCategoriesAsync(CancellationToken cancellationToken)
         {
-            return _productCategoryRepository.GetAll();
+            return await _productCategoryRepository.GetAllAsync(cancellationToken);
         }
 
-        public ProductCategory? GetCategoryById(int id)
+        public async Task<ProductCategory?> GetCategoryByIdAsync(int id, CancellationToken cancellationToken)
         {
-            return _productCategoryRepository.GetProductCategoryById(id);
+            return await _productCategoryRepository.GetProductCategoryByIdAsync(id, cancellationToken);
         }
 
-        public int AddCategory(ProductCategory category)
+        public async Task<int> AddCategoryAsync(ProductCategory category, CancellationToken cancellationToken)
         {
             if (category == null)
             {
                 throw new ArgumentNullException(nameof(category), "Product category cannot be null.");
             }
 
-            return _productCategoryRepository.AddProductCategory(category);
+            return await _productCategoryRepository.AddProductCategoryAsync(category, cancellationToken);
         }
 
-        public bool UpdateCategory(ProductCategory category)
+        public async Task<bool> UpdateCategoryAsync(ProductCategory category, CancellationToken cancellationToken)
         {
             if (category == null)
             {
                 throw new ArgumentNullException(nameof(category), "Product category cannot be null.");
             }
 
-            return _productCategoryRepository.UpdateProductCategory(category);
+            return await _productCategoryRepository.UpdateProductCategoryAsync(category, cancellationToken);
         }
 
-        public bool DeleteCategory(int id)
+        public async Task<bool> DeleteCategoryAsync(int id, CancellationToken cancellationToken)
         {
-            return _productCategoryRepository.DeleteProductCategory(id);
+            return await _productCategoryRepository.DeleteProductCategoryAsync(id, cancellationToken);
         }
     }
 }

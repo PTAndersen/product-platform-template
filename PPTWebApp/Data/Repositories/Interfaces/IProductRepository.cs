@@ -4,31 +4,31 @@ namespace PPTWebApp.Data.Repositories.Interfaces
 {
     public interface IProductRepository
     {
-        Product? GetProductById(int id);
+        Task<Product?> GetProductByIdAsync(int id, CancellationToken cancellationToken);
 
-        public int GetTotalProductCount(ProductCategory? productCategory, string keyword, decimal minPrice, decimal maxPrice);
+        public Task<int> GetTotalProductCountAsync(ProductCategory? productCategory, string keyword, decimal minPrice, decimal maxPrice, CancellationToken cancellationToken);
 
-        IEnumerable<Product> GetBestsellers(ProductCategory? productCategory, decimal minPrice, decimal maxPrice, int startIndex, int range);
+        Task<IEnumerable<Product>> GetBestsellersAsync(ProductCategory? productCategory, decimal minPrice, decimal maxPrice, int startIndex, int range, CancellationToken cancellationToken);
 
-        IEnumerable<Product> GetNewestProducts(ProductCategory? productCategory, decimal minPrice, decimal maxPrice, int startIndex, int range);
+        Task<IEnumerable<Product>> GetNewestProductsAsync(ProductCategory? productCategory, decimal minPrice, decimal maxPrice, int startIndex, int range, CancellationToken cancellationToken);
 
-        IEnumerable<Product> GetOldestProducts(ProductCategory? productCategory, decimal minPrice, decimal maxPrice, int startIndex, int range);
+        Task<IEnumerable<Product>> GetOldestProductsAsync(ProductCategory? productCategory, decimal minPrice, decimal maxPrice, int startIndex, int range, CancellationToken cancellationToken);
 
-        IEnumerable<Product> GetCheapestProducts(ProductCategory? productCategory, decimal minPrice, decimal maxPrice, int startIndex, int range);
+        Task<IEnumerable<Product>> GetCheapestProductsAsync(ProductCategory? productCategory, decimal minPrice, decimal maxPrice, int startIndex, int range, CancellationToken cancellationToken);
 
-        IEnumerable<Product> GetMostExpensiveProducts(ProductCategory? productCategory, decimal minPrice, decimal maxPrice, int startIndex, int range);
+        Task<IEnumerable<Product>> GetMostExpensiveProductsAsync(ProductCategory? productCategory, decimal minPrice, decimal maxPrice, int startIndex, int range, CancellationToken cancellationToken);
 
-        void AddProduct(Product product);
+        Task AddProductAsync(Product product, CancellationToken cancellationToken);
 
-        void UpdateProduct(Product product);
+        Task UpdateProductAsync(Product product, CancellationToken cancellationToken);
 
-        void DeleteProduct(int id);
+        Task DeleteProductAsync(int id, CancellationToken cancellationToken);
 
-        IEnumerable<Product> GetTopDiscountedProducts(ProductCategory? productCategory, decimal minPrice, decimal maxPrice, int startIndex, int range);
+        Task<IEnumerable<Product>> GetTopDiscountedProductsAsync(ProductCategory? productCategory, decimal minPrice, decimal maxPrice, int startIndex, int range, CancellationToken cancellationToken);
 
-        IEnumerable<Product> SearchProducts(ProductCategory? productCategory, string keyword, decimal minPrice, decimal maxPrice, int startIndex, int range);
+        Task<IEnumerable<Product>> SearchProductsAsync(ProductCategory? productCategory, string keyword, decimal minPrice, decimal maxPrice, int startIndex, int range, CancellationToken cancellationToken);
 
-        Task<List<(int Sales, Product Product)>> GetTopSellingProductsAsync(int topProductsCount);
+        Task<List<(int Sales, Product Product)>> GetTopSellingProductsAsync(int topProductsCount, CancellationToken cancellationToken);
 
     }
 }

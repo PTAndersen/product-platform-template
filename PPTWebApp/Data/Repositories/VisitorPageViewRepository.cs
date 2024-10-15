@@ -14,64 +14,99 @@ namespace PPTWebApp.Data.Repositories
             _connectionString = connectionString ?? throw new ArgumentNullException(nameof(connectionString));
         }
 
-        public void LogPageView(VisitorPageView pageView)
+        public async Task LogPageViewAsync(VisitorPageView pageView, CancellationToken cancellationToken)
         {
-            using (var connection = new NpgsqlConnection(_connectionString))
+            cancellationToken.ThrowIfCancellationRequested();
+
+            try
             {
-                connection.Open();
-
-                string query = @"
-                    INSERT INTO visitorpageviews (sessionid, pageurl, viewedat, referrer) 
-                    VALUES (@SessionId, @PageUrl, @ViewedAt, @Referrer)";
-
-                using (var command = new NpgsqlCommand(query, connection))
+                using (var connection = new NpgsqlConnection(_connectionString))
                 {
-                    command.Parameters.AddWithValue("@SessionId", pageView.SessionId);
-                    command.Parameters.AddWithValue("@PageUrl", pageView.PageUrl);
-                    command.Parameters.AddWithValue("@ViewedAt", pageView.ViewedAt);
-                    command.Parameters.AddWithValue("@Referrer", (object?)pageView.Referrer ?? DBNull.Value);
+                    await connection.OpenAsync(cancellationToken);
 
-                    command.ExecuteNonQuery();
+                    string query = @"
+                        INSERT INTO visitorpageviews (sessionid, pageurl, viewedat, referrer) 
+                        VALUES (@SessionId, @PageUrl, @ViewedAt, @Referrer)";
+
+                    using (var command = new NpgsqlCommand(query, connection))
+                    {
+                        command.Parameters.AddWithValue("@SessionId", pageView.SessionId);
+                        command.Parameters.AddWithValue("@PageUrl", pageView.PageUrl);
+                        command.Parameters.AddWithValue("@ViewedAt", pageView.ViewedAt);
+                        command.Parameters.AddWithValue("@Referrer", (object?)pageView.Referrer ?? DBNull.Value);
+
+                        await command.ExecuteNonQueryAsync(cancellationToken);
+                    }
                 }
+            }
+            catch (OperationCanceledException)
+            {
+                Console.WriteLine("Operation was canceled.");
+                // TODO: Log error
+                throw;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error logging page view: {ex.Message}");
+                // TODO: Log error
+                throw;
             }
         }
 
-        public IEnumerable<VisitorPageView> GetPageViewsBySessionId(Guid sessionId)
+        public async Task<IEnumerable<VisitorPageView>> GetPageViewsBySessionIdAsync(Guid sessionId, CancellationToken cancellationToken)
         {
+            cancellationToken.ThrowIfCancellationRequested();
+
             var pageViews = new List<VisitorPageView>();
 
-            using (var connection = new NpgsqlConnection(_connectionString))
+            try
             {
-                connection.Open();
-
-                string query = @"
-                    SELECT id, sessionid, pageurl, viewedat, referrer 
-                    FROM visitorpageviews 
-                    WHERE sessionid = @SessionId";
-
-                using (var command = new NpgsqlCommand(query, connection))
+                using (var connection = new NpgsqlConnection(_connectionString))
                 {
-                    command.Parameters.AddWithValue("@SessionId", sessionId);
+                    await connection.OpenAsync(cancellationToken);
 
-                    using (var reader = command.ExecuteReader())
+                    string query = @"
+                        SELECT id, sessionid, pageurl, viewedat, referrer 
+                        FROM visitorpageviews 
+                        WHERE sessionid = @SessionId";
+
+                    using (var command = new NpgsqlCommand(query, connection))
                     {
-                        while (reader.Read())
+                        command.Parameters.AddWithValue("@SessionId", sessionId);
+
+                        using (var reader = await command.ExecuteReaderAsync(cancellationToken))
                         {
-                            var pageView = new VisitorPageView
+                            while (await reader.ReadAsync(cancellationToken))
                             {
-                                Id = reader.GetInt32(0),
-                                SessionId = reader.GetGuid(1),
-                                PageUrl = reader.GetString(2),
-                                ViewedAt = reader.GetDateTime(3),
-                                Referrer = reader.IsDBNull(4) ? null : reader.GetString(4)
-                            };
-                            pageViews.Add(pageView);
+                                var pageView = new VisitorPageView
+                                {
+                                    Id = reader.GetInt32(0),
+                                    SessionId = reader.GetGuid(1),
+                                    PageUrl = reader.GetString(2),
+                                    ViewedAt = reader.GetDateTime(3),
+                                    Referrer = reader.IsDBNull(4) ? null : reader.GetString(4)
+                                };
+                                pageViews.Add(pageView);
+                            }
                         }
                     }
                 }
             }
+            catch (OperationCanceledException)
+            {
+                Console.WriteLine("Operation was canceled.");
+                // TODO: Log error
+                throw;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error retrieving page views: {ex.Message}");
+                // TODO: Log error
+                throw;
+            }
 
             return pageViews;
         }
+
     }
 }

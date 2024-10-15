@@ -26,135 +26,246 @@ namespace PPTWebApp.Data.Repositories
             };
         }
 
-        public IEnumerable<Post> GetPostsInRange(string? keyword, int startIndex, int range)
+        public async Task<IEnumerable<Post>> GetPostsInRangeAsync(string? keyword, int startIndex, int range, CancellationToken cancellationToken)
         {
+            cancellationToken.ThrowIfCancellationRequested();
+
             var posts = new List<Post>();
 
-            using (var connection = new NpgsqlConnection(_connectionString))
+            try
             {
-                connection.Open();
-
-                string query = @"
-                    SELECT *
-                    FROM posts"
-                    + (string.IsNullOrEmpty(keyword) ? "" : " WHERE title ILIKE '%' || @Keyword || '%'") +
-                    @" ORDER BY id 
-                    OFFSET @StartIndex LIMIT @Range";
-
-                using (var command = new NpgsqlCommand(query, connection))
+                using (var connection = new NpgsqlConnection(_connectionString))
                 {
-                    if (!string.IsNullOrEmpty(keyword))
-                    {
-                        command.Parameters.AddWithValue("@Keyword", keyword);
-                    }
-                    command.Parameters.AddWithValue("@StartIndex", startIndex);
-                    command.Parameters.AddWithValue("@Range", range);
+                    await connection.OpenAsync(cancellationToken);
 
-                    using (var reader = command.ExecuteReader())
+                    string query = @"
+                SELECT *
+                FROM posts"
+                        + (string.IsNullOrEmpty(keyword) ? "" : " WHERE title ILIKE '%' || @Keyword || '%'") +
+                        @" ORDER BY id 
+                OFFSET @StartIndex LIMIT @Range";
+
+                    using (var command = new NpgsqlCommand(query, connection))
                     {
-                        while (reader.Read())
+                        if (!string.IsNullOrEmpty(keyword))
                         {
-                            posts.Add(MapPostFromReader(reader));
+                            command.Parameters.AddWithValue("@Keyword", keyword);
+                        }
+                        command.Parameters.AddWithValue("@StartIndex", startIndex);
+                        command.Parameters.AddWithValue("@Range", range);
+
+                        using (var reader = await command.ExecuteReaderAsync(cancellationToken))
+                        {
+                            while (await reader.ReadAsync(cancellationToken))
+                            {
+                                posts.Add(MapPostFromReader(reader));
+                            }
                         }
                     }
                 }
+            }
+            catch (OperationCanceledException)
+            {
+                Console.WriteLine("Operation was canceled.");
+                //TODO: Log error
+                throw;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error retrieving posts: {ex.Message}");
+                //TODO: Log error
+                throw;
             }
 
             return posts;
         }
 
-        public int GetTotalPostCount(string? keyword)
+        public async Task<int> GetTotalPostCountAsync(string? keyword, CancellationToken cancellationToken)
         {
+            cancellationToken.ThrowIfCancellationRequested();
+
             int totalCount = 0;
 
-            using (var connection = new NpgsqlConnection(_connectionString))
+            try
             {
-                connection.Open();
-
-                string query = "SELECT COUNT(*) FROM posts"
-                    + (string.IsNullOrEmpty(keyword) ? "" : " WHERE title ILIKE '%' || @Keyword || '%'");
-
-                using (var command = new NpgsqlCommand(query, connection))
+                using (var connection = new NpgsqlConnection(_connectionString))
                 {
-                    if (!string.IsNullOrEmpty(keyword))
+                    await connection.OpenAsync(cancellationToken);
+
+                    string query = "SELECT COUNT(*) FROM posts"
+                        + (string.IsNullOrEmpty(keyword) ? "" : " WHERE title ILIKE '%' || @Keyword || '%'");
+
+                    using (var command = new NpgsqlCommand(query, connection))
                     {
-                        command.Parameters.AddWithValue("@Keyword", keyword);
+                        if (!string.IsNullOrEmpty(keyword))
+                        {
+                            command.Parameters.AddWithValue("@Keyword", keyword);
+                        }
+                        totalCount = Convert.ToInt32(await command.ExecuteScalarAsync(cancellationToken));
                     }
-                    totalCount = Convert.ToInt32(command.ExecuteScalar());
                 }
+            }
+            catch (OperationCanceledException)
+            {
+                Console.WriteLine("Operation was canceled.");
+                //TODO: Log error
+                throw;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error getting total post count: {ex.Message}");
+                //TODO: Log error
+                throw;
             }
 
             return totalCount;
         }
 
-        public Post? GetPostById(int id)
+        public async Task<Post?> GetPostByIdAsync(int id, CancellationToken cancellationToken)
         {
+            cancellationToken.ThrowIfCancellationRequested();
+
             Post? post = null;
-            using (var connection = new NpgsqlConnection(_connectionString))
+
+            try
             {
-                connection.Open();
-                using (var command = new NpgsqlCommand("SELECT * FROM posts WHERE id = @Id", connection))
+                using (var connection = new NpgsqlConnection(_connectionString))
                 {
-                    command.Parameters.AddWithValue("@Id", id);
-                    using (var reader = command.ExecuteReader())
+                    await connection.OpenAsync(cancellationToken);
+
+                    using (var command = new NpgsqlCommand("SELECT * FROM posts WHERE id = @Id", connection))
                     {
-                        if (reader.Read())
+                        command.Parameters.AddWithValue("@Id", id);
+
+                        using (var reader = await command.ExecuteReaderAsync(cancellationToken))
                         {
-                            post = MapPostFromReader(reader);
+                            if (await reader.ReadAsync(cancellationToken))
+                            {
+                                post = MapPostFromReader(reader);
+                            }
                         }
                     }
                 }
             }
+            catch (OperationCanceledException)
+            {
+                Console.WriteLine("Operation was canceled.");
+                //TODO: Log error
+                throw;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error getting post by ID: {ex.Message}");
+                //TODO: Log error
+                throw;
+            }
+
             return post;
         }
 
-        public void AddPost(Post post)
+        public async Task AddPostAsync(Post post, CancellationToken cancellationToken)
         {
-            using (var connection = new NpgsqlConnection(_connectionString))
+            cancellationToken.ThrowIfCancellationRequested();
+
+            try
             {
-                connection.Open();
-                using (var command = new NpgsqlCommand(
-                    "INSERT INTO posts (title, content, imageurl, imagecompromise, dateposted) VALUES (@Title, @Content, @ImageUrl, @ImageCompromise, @DatePosted)", connection))
+                using (var connection = new NpgsqlConnection(_connectionString))
                 {
-                    command.Parameters.AddWithValue("@Title", post.Title);
-                    command.Parameters.AddWithValue("@Content", post.Content);
-                    command.Parameters.AddWithValue("@ImageUrl", post.ImageUrl);
-                    command.Parameters.AddWithValue("@ImageCompromise", post.ImageCompromise);
-                    command.Parameters.AddWithValue("@DatePosted", post.DatePosted);
-                    command.ExecuteNonQuery();
+                    await connection.OpenAsync(cancellationToken);
+
+                    using (var command = new NpgsqlCommand(
+                        "INSERT INTO posts (title, content, imageurl, imagecompromise, dateposted) VALUES (@Title, @Content, @ImageUrl, @ImageCompromise, @DatePosted)", connection))
+                    {
+                        command.Parameters.AddWithValue("@Title", post.Title);
+                        command.Parameters.AddWithValue("@Content", post.Content);
+                        command.Parameters.AddWithValue("@ImageUrl", post.ImageUrl);
+                        command.Parameters.AddWithValue("@ImageCompromise", post.ImageCompromise);
+                        command.Parameters.AddWithValue("@DatePosted", post.DatePosted);
+
+                        await command.ExecuteNonQueryAsync(cancellationToken);
+                    }
                 }
+            }
+            catch (OperationCanceledException)
+            {
+                Console.WriteLine("Operation was canceled.");
+                //TODO: Log error
+                throw;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error adding post: {ex.Message}");
+                //TODO: Log error
+                throw;
             }
         }
 
-        public void UpdatePost(Post post)
+        public async Task UpdatePostAsync(Post post, CancellationToken cancellationToken)
         {
-            using (var connection = new NpgsqlConnection(_connectionString))
+            cancellationToken.ThrowIfCancellationRequested();
+
+            try
             {
-                connection.Open();
-                using (var command = new NpgsqlCommand(
-                    "UPDATE posts SET title = @Title, content = @Content, imageurl = @ImageUrl, imagecompromise = @ImageCompromise, dateposted = @DatePosted WHERE id = @Id", connection))
+                using (var connection = new NpgsqlConnection(_connectionString))
                 {
-                    command.Parameters.AddWithValue("@Id", post.Id);
-                    command.Parameters.AddWithValue("@Title", post.Title);
-                    command.Parameters.AddWithValue("@Content", post.Content);
-                    command.Parameters.AddWithValue("@ImageUrl", post.ImageUrl);
-                    command.Parameters.AddWithValue("@ImageCompromise", post.ImageCompromise);
-                    command.Parameters.AddWithValue("@DatePosted", post.DatePosted);
-                    command.ExecuteNonQuery();
+                    await connection.OpenAsync(cancellationToken);
+
+                    using (var command = new NpgsqlCommand(
+                        "UPDATE posts SET title = @Title, content = @Content, imageurl = @ImageUrl, imagecompromise = @ImageCompromise, dateposted = @DatePosted WHERE id = @Id", connection))
+                    {
+                        command.Parameters.AddWithValue("@Id", post.Id);
+                        command.Parameters.AddWithValue("@Title", post.Title);
+                        command.Parameters.AddWithValue("@Content", post.Content);
+                        command.Parameters.AddWithValue("@ImageUrl", post.ImageUrl);
+                        command.Parameters.AddWithValue("@ImageCompromise", post.ImageCompromise);
+                        command.Parameters.AddWithValue("@DatePosted", post.DatePosted);
+
+                        await command.ExecuteNonQueryAsync(cancellationToken);
+                    }
                 }
+            }
+            catch (OperationCanceledException)
+            {
+                Console.WriteLine("Operation was canceled.");
+                //TODO: Log error
+                throw;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error updating post: {ex.Message}");
+                //TODO: Log error
+                throw;
             }
         }
 
-        public void DeletePost(int id)
+        public async Task DeletePostAsync(int id, CancellationToken cancellationToken)
         {
-            using (var connection = new NpgsqlConnection(_connectionString))
+            cancellationToken.ThrowIfCancellationRequested();
+
+            try
             {
-                connection.Open();
-                using (var command = new NpgsqlCommand("DELETE FROM posts WHERE id = @Id", connection))
+                using (var connection = new NpgsqlConnection(_connectionString))
                 {
-                    command.Parameters.AddWithValue("@Id", id);
-                    command.ExecuteNonQuery();
+                    await connection.OpenAsync(cancellationToken);
+
+                    using (var command = new NpgsqlCommand("DELETE FROM posts WHERE id = @Id", connection))
+                    {
+                        command.Parameters.AddWithValue("@Id", id);
+                        await command.ExecuteNonQueryAsync(cancellationToken);
+                    }
                 }
+            }
+            catch (OperationCanceledException)
+            {
+                Console.WriteLine("Operation was canceled.");
+                //TODO: Log error
+                throw;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error deleting post: {ex.Message}");
+                //TODO: Log error
+                throw;
             }
         }
     }

@@ -34,5 +34,5 @@ public interface IApplicationUserRepository
     Task<int> GetTotalUserCountAsync(string? keyword, string? role, CancellationToken cancellationToken);
 
     // Other
-    Task<List<int>> GetDailyUserRegistrationsAsync(int daysBack);
+    Task<List<int>> GetDailyUserRegistrationsAsync(int daysBack, CancellationToken cancellationToken);
 }

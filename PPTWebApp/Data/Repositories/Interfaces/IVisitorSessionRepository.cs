@@ -4,9 +4,9 @@ namespace PPTWebApp.Data.Repositories.Interfaces
 {
     public interface IVisitorSessionRepository
     {
-        void CreateSession(Guid sessionId);
-        VisitorSession? GetSessionById(Guid sessionId);
-        bool IsSessionValid(Guid sessionId);
-        Task<List<int>> GetDailyVisitorCountsAsync(int daysBack);
+        Task CreateSessionAsync(Guid sessionId, CancellationToken cancellationToken);
+        Task<VisitorSession?> GetSessionByIdAsync(Guid sessionId, CancellationToken cancellationToken);
+        Task<bool> IsSessionValidAsync(Guid sessionId, CancellationToken cancellationToken);
+        Task<List<int>> GetDailyVisitorCountsAsync(int daysBack, CancellationToken cancellationToken);
     }
 }

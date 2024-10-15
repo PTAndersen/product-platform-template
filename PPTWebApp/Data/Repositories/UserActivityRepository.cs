@@ -13,20 +13,22 @@ namespace PPTWebApp.Data.Repositories
             _connectionString = connectionString ?? throw new ArgumentNullException(nameof(connectionString));
         }
 
-        public bool UpdateUserActivity(Guid userId)
+        public async Task<bool> UpdateUserActivityAsync(Guid userId, CancellationToken cancellation)
         {
+            cancellation.ThrowIfCancellationRequested();
+
             try
             {
                 using (var connection = new NpgsqlConnection(_connectionString))
                 {
-                    connection.Open();
+                    await connection.OpenAsync(cancellation);
 
                     string checkUserQuery = "SELECT COUNT(1) FROM aspnetusers WHERE id = @UserId";
                     using (var checkCommand = new NpgsqlCommand(checkUserQuery, connection))
                     {
                         checkCommand.Parameters.AddWithValue("@UserId", userId);
 
-                        var result = checkCommand.ExecuteScalar();
+                        var result = await checkCommand.ExecuteScalarAsync(cancellation);
                         var userExists = result != DBNull.Value && result != null ? (long)result : 0;
 
                         if (userExists == 0)
@@ -46,11 +48,17 @@ namespace PPTWebApp.Data.Repositories
                         command.Parameters.AddWithValue("@UserId", userId);
                         command.Parameters.AddWithValue("@LastActivityAt", DateTime.UtcNow);
 
-                        command.ExecuteNonQuery();
+                        await command.ExecuteNonQueryAsync(cancellation);
                     }
 
                     return true;
                 }
+            }
+            catch (OperationCanceledException)
+            {
+                Console.WriteLine("Operation was canceled.");
+                //TODO: Log error
+                return false;
             }
             catch (NpgsqlException ex)
             {
@@ -64,73 +72,105 @@ namespace PPTWebApp.Data.Repositories
                 //TODO: Log error
                 return false;
             }
-
         }
 
-
-        public UserActivity? GetLastActivity(int userId)
+        public async Task<UserActivity?> GetLastActivityAsync(int userId, CancellationToken cancellation)
         {
-            using (var connection = new NpgsqlConnection(_connectionString))
+            cancellation.ThrowIfCancellationRequested();
+
+            try
             {
-                connection.Open();
-
-                string query = @"
-                    SELECT id, userid, lastactivityat 
-                    FROM useractivity 
-                    WHERE userid = @UserId";
-
-                using (var command = new NpgsqlCommand(query, connection))
+                using (var connection = new NpgsqlConnection(_connectionString))
                 {
-                    command.Parameters.AddWithValue("@UserId", userId);
+                    await connection.OpenAsync(cancellation);
 
-                    using (var reader = command.ExecuteReader())
+                    string query = @"
+                        SELECT id, userid, lastactivityat 
+                        FROM useractivity 
+                        WHERE userid = @UserId";
+
+                    using (var command = new NpgsqlCommand(query, connection))
                     {
-                        if (reader.Read())
+                        command.Parameters.AddWithValue("@UserId", userId);
+
+                        using (var reader = await command.ExecuteReaderAsync(cancellation))
                         {
-                            return new UserActivity
+                            if (await reader.ReadAsync(cancellation))
                             {
-                                Id = reader.GetInt32(0),
-                                UserId = reader.GetInt32(1),
-                                LastActivityAt = reader.GetDateTime(2)
-                            };
+                                return new UserActivity
+                                {
+                                    Id = reader.GetInt32(0),
+                                    UserId = reader.GetInt32(1),
+                                    LastActivityAt = reader.GetDateTime(2)
+                                };
+                            }
                         }
                     }
                 }
+            }
+            catch (OperationCanceledException)
+            {
+                Console.WriteLine("Operation was canceled.");
+                //TODO: Log error
+                throw;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error retrieving user activity: {ex.Message}");
+                //TODO: Log error
+                throw;
             }
 
             return null;
         }
 
-        public IEnumerable<UserActivity> GetActiveUsersWithin(TimeSpan timeSpan)
+        public async Task<IEnumerable<UserActivity>> GetActiveUsersWithinAsync(TimeSpan timeSpan, CancellationToken cancellationToken)
         {
+            cancellationToken.ThrowIfCancellationRequested();
+
             var activeUsers = new List<UserActivity>();
 
-            using (var connection = new NpgsqlConnection(_connectionString))
+            try
             {
-                connection.Open();
-
-                string query = @"
-                    SELECT id, userid, lastactivityat 
-                    FROM useractivity 
-                    WHERE lastactivityat >= CURRENT_TIMESTAMP - @TimeSpan";
-
-                using (var command = new NpgsqlCommand(query, connection))
+                using (var connection = new NpgsqlConnection(_connectionString))
                 {
-                    command.Parameters.AddWithValue("@TimeSpan", timeSpan);
+                    await connection.OpenAsync(cancellationToken);
 
-                    using (var reader = command.ExecuteReader())
+                    string query = @"
+                        SELECT id, userid, lastactivityat 
+                        FROM useractivity 
+                        WHERE lastactivityat >= CURRENT_TIMESTAMP - @TimeSpan::interval";
+
+                    using (var command = new NpgsqlCommand(query, connection))
                     {
-                        while (reader.Read())
+                        command.Parameters.AddWithValue("@TimeSpan", timeSpan);
+
+                        using (var reader = await command.ExecuteReaderAsync(cancellationToken))
                         {
-                            activeUsers.Add(new UserActivity
+                            while (await reader.ReadAsync(cancellationToken))
                             {
-                                Id = reader.GetInt32(0),
-                                UserId = reader.GetInt32(1),
-                                LastActivityAt = reader.GetDateTime(2)
-                            });
+                                activeUsers.Add(new UserActivity
+                                {
+                                    Id = reader.GetInt32(0),
+                                    UserId = reader.GetInt32(1),
+                                    LastActivityAt = reader.GetDateTime(2)
+                                });
+                            }
                         }
                     }
                 }
+            }
+            catch (OperationCanceledException)
+            {
+                Console.WriteLine("Operation was canceled.");
+                //TODO: Log error
+                throw;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error retrieving active users: {ex.Message}");
+                //TODO: Log error
+                throw;
             }
 
             return activeUsers;

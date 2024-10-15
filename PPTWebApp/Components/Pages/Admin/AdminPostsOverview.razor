@@ -18,7 +18,7 @@
         <div class="admin-post-overview-container">
             <h1>Create New Post</h1>
 
-            <EditForm Model="@postModel" OnValidSubmit="HandleValidSubmit">
+            <EditForm Model="@postModel" OnValidSubmit="HandleValidSubmitAsync">
                 <div class="form-group">
                     <label for="postTitle">Post Title</label>
                     <input id="postTitle" class="form-control" @bind="postModel.Title" placeholder="Enter post title" required />
@@ -50,7 +50,7 @@
 
                 <div class="form-group">
                     <label for="postFile">Upload HTML File</label>
-                    <InputFile OnChange="HandleFileSelected" class="form-control" />
+                    <InputFile OnChange="HandleFileSelectedAsync" class="form-control" />
                 </div>
 
                 <button type="submit" class="btn btn-primary">Submit Post</button>
@@ -112,7 +112,7 @@
             };
     }
 
-    private async Task HandleFileSelected(InputFileChangeEventArgs e)
+    private async Task HandleFileSelectedAsync(InputFileChangeEventArgs e)
     {
         var file = e.File;
 
@@ -127,7 +127,7 @@
         }
     }
 
-    private async Task HandleValidSubmit()
+    private async Task HandleValidSubmitAsync()
     {
         if (postModel == null)
         {
@@ -146,7 +146,7 @@
             postModel.Content = htmlFileContent;
             postModel.DatePosted = postModel.DatePosted == DateTime.MinValue ? DateTime.Now : postModel.DatePosted;
 
-            PostService.AddPost(postModel);
+            await PostService.AddPostAsync(postModel, CancellationToken.None);
 
             Console.WriteLine("Post successfully added.");
             Navigation.NavigateTo("/posts");

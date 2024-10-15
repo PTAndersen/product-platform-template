@@ -95,37 +95,37 @@
     {
         if (firstRender && isAdmin)
         {
-            await LoadDailyVisitors();
-            await LoadDailySales();
-            await LoadDailyRegistrations();
+            await LoadDailyVisitorsAsync();
+            await LoadDailySalesAsync();
+            await LoadDailyRegistrationsAsync();
             await LoadTopSellingProducts();
-            await InitializeCharts();
+            await InitializeChartsAsync();
         }
     }
 
 
 
-    private async Task LoadDailyVisitors()
+    private async Task LoadDailyVisitorsAsync()
     {
-        dailyVisitorsCounts = await VisitorSessionService.GetDailyVisitorCountsAsync(7);
+        dailyVisitorsCounts = await VisitorSessionService.GetDailyVisitorCountsAsync(7, CancellationToken.None);
     }
 
-    private async Task LoadDailySales()
+    private async Task LoadDailySalesAsync()
     {
-        dailySales = await OrderService.GetDailySalesAsync(7);
+        dailySales = await OrderService.GetDailySalesAsync(7, CancellationToken.None);
     }
 
-    private async Task LoadDailyRegistrations()
+    private async Task LoadDailyRegistrationsAsync()
     {
-        dailyRegistrations = await ApplicationUserService.GetDailyUserRegistrationsAsync(7);
+        dailyRegistrations = await ApplicationUserService.GetDailyUserRegistrationsAsync(7, CancellationToken.None);
     }
 
     private async Task LoadTopSellingProducts()
     {
-        topSellingProducts = await ProductService.GetTopSellingProductsAsync(5);
+        topSellingProducts = await ProductService.GetTopSellingProductsAsync(5, CancellationToken.None);
     }
 
-    private async Task InitializeCharts()
+    private async Task InitializeChartsAsync()
     {
         var dateLabels = Enumerable.Range(0, 7)
             .Select(i => DateTime.Now.AddDays(-i).ToString("ddd"))

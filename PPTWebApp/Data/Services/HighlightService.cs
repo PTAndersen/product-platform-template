@@ -1,5 +1,8 @@
 ﻿using PPTWebApp.Data.Models;
 using PPTWebApp.Data.Repositories.Interfaces;
+using System.Collections.Generic;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace PPTWebApp.Data.Services
 {
@@ -12,19 +15,19 @@ namespace PPTWebApp.Data.Services
             _highlightRepository = highlightRepository ?? throw new ArgumentNullException(nameof(highlightRepository));
         }
 
-        public bool AddHighlight(int productId, int position)
+        public async Task<bool> AddHighlightAsync(int productId, int position, CancellationToken cancellationToken)
         {
-            return _highlightRepository.AddHighlight(productId, position);
+            return await _highlightRepository.AddHighlightAsync(productId, position, cancellationToken);
         }
 
-        public IEnumerable<Product?> GetHighlights()
+        public async Task<IEnumerable<Product?>> GetHighlightsAsync(CancellationToken cancellationToken)
         {
-            return _highlightRepository.GetHighlights();
+            return await _highlightRepository.GetHighlightsAsync(cancellationToken);
         }
 
-        public void RemoveHighlight(int position)
+        public async Task RemoveHighlightAsync(int position, CancellationToken cancellationToken)
         {
-            _highlightRepository.RemoveHighlight(position);
+            await _highlightRepository.RemoveHighlightAsync(position, cancellationToken);
         }
     }
 }

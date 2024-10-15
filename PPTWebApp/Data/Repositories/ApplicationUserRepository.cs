@@ -1,6 +1,7 @@
 ﻿using Npgsql;
 using System.Data;
 using PPTWebApp.Data.Models;
+using System.Threading;
 
 public class ApplicationUserRepository : IApplicationUserRepository
 {
@@ -49,7 +50,7 @@ public class ApplicationUserRepository : IApplicationUserRepository
             command.Parameters.AddWithValue("@UserId", Guid.Parse(user.Id));
             command.Parameters.AddWithValue("@RoleName", roleName.ToUpper());
 
-            connection.Open();
+            await connection.OpenAsync(cancellationToken);
             await command.ExecuteNonQueryAsync(cancellationToken);
         }
     }
@@ -82,7 +83,7 @@ public class ApplicationUserRepository : IApplicationUserRepository
             command.Parameters.AddWithValue("@ConcurrencyStamp", user.ConcurrencyStamp ?? (object)DBNull.Value);
             command.Parameters.AddWithValue("@LockoutEnd", user.LockoutEnd ?? (object)DBNull.Value);
 
-            connection.Open();
+            await connection.OpenAsync(cancellationToken);
             await command.ExecuteNonQueryAsync(cancellationToken);
         }
     }
@@ -96,7 +97,7 @@ public class ApplicationUserRepository : IApplicationUserRepository
             var command = new NpgsqlCommand("DELETE FROM aspnetusers WHERE id = @UserId", connection);
             command.Parameters.Add("@UserId", NpgsqlTypes.NpgsqlDbType.Uuid).Value = Guid.Parse(userId);
 
-            connection.Open();
+            await connection.OpenAsync(cancellationToken);
             await command.ExecuteNonQueryAsync(cancellationToken);
         }
     }
@@ -111,7 +112,7 @@ public class ApplicationUserRepository : IApplicationUserRepository
                 "SELECT * FROM aspnetusers WHERE normalizedemail = @NormalizedEmail", connection);
             command.Parameters.AddWithValue("@NormalizedEmail", normalizedEmail);
 
-            connection.Open();
+            await connection.OpenAsync(cancellationToken);
             using (var reader = await command.ExecuteReaderAsync(CommandBehavior.SingleRow, cancellationToken))
             {
                 if (await reader.ReadAsync(cancellationToken))
@@ -134,7 +135,7 @@ public class ApplicationUserRepository : IApplicationUserRepository
                 "SELECT * FROM aspnetusers WHERE id = @UserId", connection);
             command.Parameters.Add("@UserId", NpgsqlTypes.NpgsqlDbType.Uuid).Value = Guid.Parse(userId);
 
-            connection.Open();
+            await connection.OpenAsync(cancellationToken);
             using (var reader = await command.ExecuteReaderAsync(CommandBehavior.SingleRow, cancellationToken))
             {
                 if (await reader.ReadAsync(cancellationToken))
@@ -157,7 +158,7 @@ public class ApplicationUserRepository : IApplicationUserRepository
                 "SELECT * FROM aspnetusers WHERE normalizedusername = @NormalizedUserName", connection);
             command.Parameters.AddWithValue("@NormalizedUserName", normalizedUserName);
 
-            connection.Open();
+            await connection.OpenAsync(cancellationToken);
             using (var reader = await command.ExecuteReaderAsync(CommandBehavior.SingleRow, cancellationToken))
             {
                 if (await reader.ReadAsync(cancellationToken))
@@ -210,7 +211,7 @@ public class ApplicationUserRepository : IApplicationUserRepository
             command.Parameters.AddWithValue("@LockoutEnd", user.LockoutEnd ?? (object)DBNull.Value);
             command.Parameters.AddWithValue("@UserId", Guid.Parse(user.Id));
 
-            connection.Open();
+            await connection.OpenAsync(cancellationToken);
             await command.ExecuteNonQueryAsync(cancellationToken);
         }
     }
@@ -317,7 +318,7 @@ public class ApplicationUserRepository : IApplicationUserRepository
             command.Parameters.AddWithValue("@PasswordHash", passwordHash ?? (object)DBNull.Value);
             command.Parameters.AddWithValue("@UserId", userId);
 
-            connection.Open();
+            await connection.OpenAsync(cancellationToken);
             await command.ExecuteNonQueryAsync(cancellationToken);
 
             user.PasswordHash = passwordHash;
@@ -349,7 +350,7 @@ public class ApplicationUserRepository : IApplicationUserRepository
 
             command.Parameters.AddWithValue("@UserId", Guid.Parse(user.Id));
 
-            connection.Open();
+            await connection.OpenAsync(cancellationToken);
             var passwordHash = await command.ExecuteScalarAsync(cancellationToken);
 
             return passwordHash != null ? passwordHash.ToString() : string.Empty;
@@ -367,7 +368,7 @@ public class ApplicationUserRepository : IApplicationUserRepository
 
             command.Parameters.AddWithValue("@UserId", Guid.Parse(user.Id));
 
-            connection.Open();
+            await connection.OpenAsync(cancellationToken);
             var passwordHash = await command.ExecuteScalarAsync(cancellationToken);
 
             return !string.IsNullOrEmpty(passwordHash?.ToString());
@@ -394,7 +395,7 @@ public class ApplicationUserRepository : IApplicationUserRepository
 
             command.Parameters.AddWithValue("@UserId", Guid.Parse(user.Id));
 
-            connection.Open();
+            await connection.OpenAsync(cancellationToken);
             using (var reader = await command.ExecuteReaderAsync(cancellationToken))
             {
                 while (await reader.ReadAsync(cancellationToken))
@@ -423,7 +424,7 @@ public class ApplicationUserRepository : IApplicationUserRepository
 
             command.Parameters.AddWithValue("@RoleName", roleName.ToUpper());
 
-            connection.Open();
+            await connection.OpenAsync(cancellationToken);
             using (var reader = await command.ExecuteReaderAsync(cancellationToken))
             {
                 while (await reader.ReadAsync(cancellationToken))
@@ -453,7 +454,7 @@ public class ApplicationUserRepository : IApplicationUserRepository
                 command.Parameters.AddWithValue("@UserId", Guid.Parse(user.Id));
                 command.Parameters.AddWithValue("@RoleName", roleName.ToUpper());
 
-                connection.Open();
+                await connection.OpenAsync(cancellationToken);
                 var result = await command.ExecuteScalarAsync(cancellationToken);
 
                 var count = result != null ? (long)result : 0;
@@ -483,7 +484,7 @@ public class ApplicationUserRepository : IApplicationUserRepository
             command.Parameters.AddWithValue("@UserId", Guid.Parse(user.Id));
             command.Parameters.AddWithValue("@RoleName", roleName.ToUpper());
 
-            connection.Open();
+            await connection.OpenAsync(cancellationToken);
             await command.ExecuteNonQueryAsync(cancellationToken);
         }
     }
@@ -571,13 +572,13 @@ public class ApplicationUserRepository : IApplicationUserRepository
     }
 
 
-    public async Task<List<int>> GetDailyUserRegistrationsAsync(int daysBack)
+    public async Task<List<int>> GetDailyUserRegistrationsAsync(int daysBack, CancellationToken cancellationToken)
     {
         var dailyRegistrations = new List<int>();
 
         using (var connection = new NpgsqlConnection(_connectionString))
         {
-            await connection.OpenAsync();
+            await connection.OpenAsync(cancellationToken);
 
             string query = $@"
             WITH date_series AS (
@@ -602,9 +603,9 @@ public class ApplicationUserRepository : IApplicationUserRepository
             {
                 command.Parameters.AddWithValue("@DaysBack", daysBack);
 
-                using (var reader = await command.ExecuteReaderAsync())
+                using (var reader = await command.ExecuteReaderAsync(cancellationToken))
                 {
-                    while (await reader.ReadAsync())
+                    while (await reader.ReadAsync(cancellationToken))
                     {
                         dailyRegistrations.Add(reader.GetInt32(1));
                     }

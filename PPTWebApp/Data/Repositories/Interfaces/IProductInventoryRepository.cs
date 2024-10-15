@@ -4,9 +4,9 @@ namespace PPTWebApp.Data.Repositories.Interfaces
 {
     public interface IProductInventoryRepository
     {
-        ProductInventory? GetProductInventoryById(int id);
-        int AddProductInventory(ProductInventory productInventory);
-        bool UpdateProductInventory(ProductInventory productInventory);
-        bool DeleteProductInventory(int id);
+        Task<ProductInventory?> GetProductInventoryByIdAsync(int id, CancellationToken cancellationToken);
+        Task<int> AddProductInventoryAsync(ProductInventory productInventory, CancellationToken cancellationToken);
+        Task<bool> UpdateProductInventoryAsync(ProductInventory productInventory, CancellationToken cancellationToken);
+        Task<bool> DeleteProductInventoryAsync(int id, CancellationToken cancellationToken);
     }
 }

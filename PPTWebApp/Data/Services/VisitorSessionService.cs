@@ -1,5 +1,9 @@
 ﻿using PPTWebApp.Data.Models;
 using PPTWebApp.Data.Repositories.Interfaces;
+using System;
+using System.Collections.Generic;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace PPTWebApp.Data.Services
 {
@@ -12,36 +16,35 @@ namespace PPTWebApp.Data.Services
             _visitorSessionRepository = visitorSessionRepository ?? throw new ArgumentNullException(nameof(visitorSessionRepository));
         }
 
-        public void CreateSession(Guid sessionId)
+        public async Task CreateSessionAsync(Guid sessionId, CancellationToken cancellationToken)
         {
-            _visitorSessionRepository.CreateSession(sessionId);
+            await _visitorSessionRepository.CreateSessionAsync(sessionId, cancellationToken);
         }
 
-        public VisitorSession? GetSessionById(Guid sessionId)
+        public async Task<VisitorSession?> GetSessionByIdAsync(Guid sessionId, CancellationToken cancellationToken)
         {
-            return _visitorSessionRepository.GetSessionById(sessionId);
+            return await _visitorSessionRepository.GetSessionByIdAsync(sessionId, cancellationToken);
         }
 
-        public Task<List<int>> GetDailyVisitorCountsAsync(int daysBack)
+        public async Task<List<int>> GetDailyVisitorCountsAsync(int daysBack, CancellationToken cancellationToken)
         {
-            return _visitorSessionRepository.GetDailyVisitorCountsAsync(daysBack);
+            return await _visitorSessionRepository.GetDailyVisitorCountsAsync(daysBack, cancellationToken);
         }
 
-        public bool IsSessionValid(Guid sessionId)
+        public async Task<bool> IsSessionValidAsync(Guid sessionId, CancellationToken cancellationToken)
         {
-            return _visitorSessionRepository.IsSessionValid(sessionId);
+            return await _visitorSessionRepository.IsSessionValidAsync(sessionId, cancellationToken);
         }
 
-        public Guid HandleSession(Guid? sessionId)
+        public async Task<Guid> HandleSessionAsync(Guid? sessionId, CancellationToken cancellationToken)
         {
-            if (sessionId == null || !IsSessionValid(sessionId.Value))
+            if (sessionId == null || !(await IsSessionValidAsync(sessionId.Value, cancellationToken)))
             {
                 var newSessionId = Guid.NewGuid();
-                CreateSession(newSessionId);
+                await CreateSessionAsync(newSessionId, cancellationToken);
                 return newSessionId;
             }
             return sessionId.Value;
         }
-
     }
 }

@@ -23,7 +23,7 @@
                 <h3>Highlight 1</h3>
                 <div class="form-group">
                     <label for="highlight1">Enter Product ID to Highlight:</label>
-                    <input id="highlight1" type="text" class="form-control" @bind="highlight1Id" @bind:event="oninput" @onchange="() => OnHighlightIdChanged(highlight1Id, 1)" />
+                    <input id="highlight1" type="text" class="form-control" @bind="highlight1Id" @bind:event="oninput" @onchange="() => OnHighlightIdChangedAsync(highlight1Id, 1)" />
                 </div>
                 <div class="highlight-preview">
                     <p><strong>Preview:</strong> @selectedHighlight1</p>
@@ -35,7 +35,7 @@
                 <h3>Highlight 2</h3>
                 <div class="form-group">
                     <label for="highlight2">Enter Product ID to Highlight:</label>
-                    <input id="highlight2" type="text" class="form-control" @bind="highlight2Id" @bind:event="oninput" @onchange="() => OnHighlightIdChanged(highlight2Id, 2)" />
+                    <input id="highlight2" type="text" class="form-control" @bind="highlight2Id" @bind:event="oninput" @onchange="() => OnHighlightIdChangedAsync(highlight2Id, 2)" />
                 </div>
                 <div class="highlight-preview">
                     <p><strong>Preview:</strong> @selectedHighlight2</p>
@@ -47,7 +47,7 @@
                 <h3>Highlight 3</h3>
                 <div class="form-group">
                     <label for="highlight3">Enter Product ID to Highlight:</label>
-                    <input id="highlight3" type="text" class="form-control" @bind="highlight3Id" @bind:event="oninput" @onchange="() => OnHighlightIdChanged(highlight3Id, 3)" />
+                    <input id="highlight3" type="text" class="form-control" @bind="highlight3Id" @bind:event="oninput" @onchange="() => OnHighlightIdChangedAsync(highlight3Id, 3)" />
                 </div>
                 <div class="highlight-preview">
                     <p><strong>Preview:</strong> @selectedHighlight3</p>
@@ -55,7 +55,7 @@
                 </div>
             </div>
 
-            <button class="btn btn-primary" @onclick="SaveHighlights">Save Highlights</button>
+            <button class="btn btn-primary" @onclick="SaveHighlightsAsync">Save Highlights</button>
         </div>
     }
     else
@@ -99,12 +99,12 @@
             Navigation.NavigateTo("/");
         }
 
-        await LoadCurrentHighlights();
+        await LoadCurrentHighlightsAsync();
     }
 
-    private async Task LoadCurrentHighlights()
+    private async Task LoadCurrentHighlightsAsync()
     {
-        var highlights = HighlightService.GetHighlights().ToList();
+        var highlights = (await HighlightService.GetHighlightsAsync(CancellationToken.None)).ToList();
 
         highlight1Id = "";
         highlight2Id = "";
@@ -140,11 +140,11 @@
         StateHasChanged();
     }
 
-    private async Task LoadProductDetails(int productId, int highlightNumber)
+    private async Task LoadProductDetailsAsync(int productId, int highlightNumber)
     {
         try
         {
-            var product = ProductService.GetProductById(productId);
+            var product = await ProductService.GetProductByIdAsync(productId, CancellationToken.None);
 
             if (product != null)
             {
@@ -190,11 +190,11 @@
         }
     }
 
-    private async void OnHighlightIdChanged(string productId, int highlightNumber)
+    private async Task OnHighlightIdChangedAsync(string productId, int highlightNumber)
     {
         if (int.TryParse(productId, out int id))
         {
-            await LoadProductDetails(id, highlightNumber);
+            await LoadProductDetailsAsync(id, highlightNumber);
         }
         else
         {
@@ -203,7 +203,7 @@
         }
     }
 
-    private async Task SaveHighlights()
+    private async Task SaveHighlightsAsync()
     {
         highlight1Status = string.Empty;
         highlight2Status = string.Empty;
@@ -211,38 +211,38 @@
 
         if (int.TryParse(highlight1Id, out int productId1))
         {
-            bool success = HighlightService.AddHighlight(productId1, 1);
+            bool success = await HighlightService.AddHighlightAsync(productId1, 1, CancellationToken.None);
             highlight1Status = success ? "Successfully saved" : "Failed to save, reverted to old product";
         }
         else
         {
-            HighlightService.RemoveHighlight(1);
+            await HighlightService.RemoveHighlightAsync(1, CancellationToken.None);
             highlight1Status = "Highlight removed";
         }
 
         if (int.TryParse(highlight2Id, out int productId2))
         {
-            bool success = HighlightService.AddHighlight(productId2, 2);
+            bool success = await HighlightService.AddHighlightAsync(productId2, 2, CancellationToken.None);
             highlight2Status = success ? "Successfully saved" : "Failed to save, reverted to old product";
         }
         else
         {
-            HighlightService.RemoveHighlight(2);
+            await HighlightService.RemoveHighlightAsync(2, CancellationToken.None);
             highlight2Status = "Highlight removed";
         }
 
         if (int.TryParse(highlight3Id, out int productId3))
         {
-            bool success = HighlightService.AddHighlight(productId3, 3);
+            bool success = await HighlightService.AddHighlightAsync(productId3, 3, CancellationToken.None);
             highlight3Status = success ? "Successfully saved" : "Failed to save, reverted to old product";
         }
         else
         {
-            HighlightService.RemoveHighlight(3);
+            await HighlightService.RemoveHighlightAsync(3, CancellationToken.None);
             highlight3Status = "Highlight removed";
         }
 
-        await LoadCurrentHighlights();
+        await LoadCurrentHighlightsAsync();
         StateHasChanged();
     }
 

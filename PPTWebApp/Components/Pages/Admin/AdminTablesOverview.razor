@@ -23,7 +23,7 @@
         <div class="admin-table-overview-container">
             <div class="form-group">
                 <label for="tableSelection">Select Table:</label>
-                <select id="tableSelection" class="form-control" @onchange="OnTableSelectionChanged">
+                <select id="tableSelection" class="form-control" @onchange="OnTableSelectionChangedAsync">
                     <option value="">-- Select a Table --</option>
                     @foreach (var table in Tables)
                     {
@@ -36,7 +36,7 @@
             {
                 <div class="form-group">
                     <label for="searchField">Search in @SelectedTable:</label>
-                    <input id="searchField" type="text" class="form-control" placeholder="Search..." @oninput="OnSearchChanged" />
+                    <input id="searchField" type="text" class="form-control" placeholder="Search..." @oninput="OnSearchChangedAsync" />
                 </div>
 
                 <div class="table-responsive">
@@ -68,11 +68,11 @@
                 </div>
 
                 <div class="pagination">
-                    <button class="pagination-btn" @onclick="LoadPreviousPage" disabled="@((PageIndex == 0))">←</button>
+                    <button class="pagination-btn" @onclick="LoadPreviousPageAsync" disabled="@((PageIndex == 0))">←</button>
                     <span class="pagination-text">Page</span>
                     <input type="number" value="@(PageIndex + 1)" min="1" max="@TotalPages" class="page-input" @onchange="OnPageInputChange" />
                     <span class="pagination-text">of @TotalPages</span>
-                    <button class="pagination-btn" @onclick="LoadNextPage" disabled="@((PageIndex == TotalPages - 1))">→</button>
+                    <button class="pagination-btn" @onclick="LoadNextPageAsync" disabled="@((PageIndex == TotalPages - 1))">→</button>
                 </div>
             }
         </div>
@@ -115,7 +115,7 @@
         }
     }
 
-    private async void OnTableSelectionChanged(ChangeEventArgs e)
+    private async Task OnTableSelectionChangedAsync(ChangeEventArgs e)
     {
         SelectedTable = e.Value?.ToString();
         PageIndex = 0;
@@ -128,8 +128,8 @@
         {
             case "Posts":
                 TableHeaders = new List<string> { "ID", "Title", "Date Posted" };
-                SetTotalItems();
-                var posts = PostService.GetPostsInRange(SearchQuery, PageIndex * PageSize, PageSize);
+                await SetTotalItemsAsync();
+                var posts = await PostService.GetPostsInRangeAsync(SearchQuery, PageIndex * PageSize, PageSize, CancellationToken.None);
                 PaginatedEntities = posts.Select(post => new Dictionary<string, object>
                 {
                     { "ID", post.Id },
@@ -140,8 +140,8 @@
 
             case "Products":
                 TableHeaders = new List<string> { "ID", "Product Name", "Price", "Discount Active", "Inventory Quantity" };
-                SetTotalItems();
-                var products = ProductService.SearchProducts(null, SearchQuery, 0, 1000000000, PageIndex * PageSize, PageSize);
+                await SetTotalItemsAsync();
+                var products = await ProductService.SearchProductsAsync(null, SearchQuery, 0, 1000000000, PageIndex * PageSize, PageSize, CancellationToken.None);
                 PaginatedEntities = products.Select(product => new Dictionary<string, object>
                 {
                     { "ID", product.Id },
@@ -166,7 +166,7 @@
 
             case "Product Categories":
                 TableHeaders = new List<string> { "ID", "Category Name", "Description" };
-                var categories = ProductCategoryService.GetAllCategories();
+                var categories = await ProductCategoryService.GetAllCategoriesAsync(CancellationToken.None);
                 PaginatedEntities = categories.Select(category => new Dictionary<string, object>
                 {
                     { "ID", category.Id },
@@ -177,8 +177,8 @@
 
             case "Discounts":
                 TableHeaders = new List<string> { "ID", "Name", "Description", "Discount Percent", "Active" };
-                SetTotalItems();
-                var discounts = DiscountService.GetAllDiscountsInRange(SearchQuery, PageIndex * PageSize, PageSize);
+                await SetTotalItemsAsync();
+                var discounts = await DiscountService.GetAllDiscountsInRangeAsync(SearchQuery, PageIndex * PageSize, PageSize, CancellationToken.None);
                 PaginatedEntities = discounts.Select(discount => new Dictionary<string, object>
                 {
                     { "ID", discount.Id },
@@ -198,45 +198,45 @@
         StateHasChanged();
     }
 
-    private void SetTotalItems()
+    private async Task SetTotalItemsAsync()
     {
         if (SelectedTable == "Posts")
         {
-            TotalItems = PostService.GetTotalPostCount(SearchQuery);
+            TotalItems = await PostService.GetTotalPostCountAsync(SearchQuery, CancellationToken.None);
         }
         else if (SelectedTable == "Products")
         {
-            TotalItems = ProductService.GetTotalProductCount(null, SearchQuery, 0, 1000000000);
+            TotalItems = await ProductService.GetTotalProductCountAsync(null, SearchQuery, 0, 1000000000, CancellationToken.None);
         }
         else if (SelectedTable == "Discounts")
         {
-            TotalItems = DiscountService.GetDiscountCount(SearchQuery);
+            TotalItems = await DiscountService.GetDiscountCountAsync(SearchQuery, CancellationToken.None);
         }
     }
 
-    private void OnSearchChanged(ChangeEventArgs e)
+    private async Task OnSearchChangedAsync(ChangeEventArgs e)
     {
         SearchQuery = e.Value?.ToString() ?? string.Empty;
         PageIndex = 0;
-        SetTotalItems();
+        await SetTotalItemsAsync();
         _ = LoadTableDataAsync();
     }
 
-    private void LoadNextPage()
+    private async Task LoadNextPageAsync()
     {
         if (PageIndex < TotalPages - 1)
         {
             PageIndex++;
-            _ = LoadTableDataAsync();
+            await (_ = LoadTableDataAsync());
         }
     }
 
-    private void LoadPreviousPage()
+    private async Task LoadPreviousPageAsync()
     {
         if (PageIndex > 0)
         {
             PageIndex--;
-            _ = LoadTableDataAsync();
+            await (_ = LoadTableDataAsync());
         }
     }
 

@@ -1,6 +1,5 @@
 ﻿using PPTWebApp.Data.Models;
 using PPTWebApp.Data.Repositories.Interfaces;
-using System.Collections.Generic;
 
 namespace PPTWebApp.Data.Services
 {
@@ -13,7 +12,7 @@ namespace PPTWebApp.Data.Services
             _visitorPageViewRepository = visitorPageViewRepository ?? throw new ArgumentNullException(nameof(visitorPageViewRepository));
         }
 
-        public void LogPageView(Guid sessionId, string pageUrl, string? referrer)
+        public async Task LogPageViewAsync(Guid sessionId, string pageUrl, string? referrer, CancellationToken cancellationToken)
         {
             var pageView = new VisitorPageView
             {
@@ -23,12 +22,12 @@ namespace PPTWebApp.Data.Services
                 Referrer = referrer
             };
 
-            _visitorPageViewRepository.LogPageView(pageView);
+            await _visitorPageViewRepository.LogPageViewAsync(pageView, cancellationToken);
         }
 
-        public IEnumerable<VisitorPageView> GetPageViewsBySessionId(Guid sessionId)
+        public async Task<IEnumerable<VisitorPageView>> GetPageViewsBySessionIdAsync(Guid sessionId, CancellationToken cancellationToken)
         {
-            return _visitorPageViewRepository.GetPageViewsBySessionId(sessionId);
+            return await _visitorPageViewRepository.GetPageViewsBySessionIdAsync(sessionId, cancellationToken);
         }
     }
 }

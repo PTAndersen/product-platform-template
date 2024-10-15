@@ -4,7 +4,7 @@ namespace PPTWebApp.Data.Repositories.Interfaces
 {
     public interface IVisitorPageViewRepository
     {
-        void LogPageView(VisitorPageView pageView);
-        IEnumerable<VisitorPageView> GetPageViewsBySessionId(Guid sessionId);
+        Task LogPageViewAsync(VisitorPageView pageView, CancellationToken cancellationToken);
+        Task<IEnumerable<VisitorPageView>> GetPageViewsBySessionIdAsync(Guid sessionId, CancellationToken cancellationToken);
     }
 }

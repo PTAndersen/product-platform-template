@@ -4,8 +4,8 @@ namespace PPTWebApp.Data.Repositories.Interfaces
 {
     public interface IHighlightRepository
     {
-        IEnumerable<Product?> GetHighlights();
-        bool AddHighlight(int productId, int position);
-        void RemoveHighlight(int position);
+        Task<IEnumerable<Product?>> GetHighlightsAsync(CancellationToken cancellationToken);
+        Task<bool> AddHighlightAsync(int productId, int position, CancellationToken cancellationToken);
+        Task RemoveHighlightAsync(int position, CancellationToken cancellationToken);
     }
 }
