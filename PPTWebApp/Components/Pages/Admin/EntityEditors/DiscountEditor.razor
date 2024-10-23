@@ -1,0 +1,83 @@
+﻿@page "/admin/edit/discounts/{id:int}"
+@using PPTWebApp.Data.Models
+@using PPTWebApp.Data.Services
+
+@inject DiscountService DiscountService
+@inject NavigationManager NavigationManager
+
+<div class="discount-editor-container"> 
+    <h2>Edit Discount</h2>
+
+    @if (!string.IsNullOrEmpty(errorMessage))
+    {
+        <div class="alert alert-danger">@errorMessage</div>
+    }
+    else if (discount == null)
+    {
+        <div>Loading discount details...</div>
+    }
+    else
+    {
+        <EditForm Model="discount" OnValidSubmit="SaveChanges">
+            <div class="form-group">
+                <label for="name">Discount Name</label>
+                <InputText id="name" class="form-control" @bind-Value="discount.Name" />
+            </div>
+
+            <div class="form-group">
+                <label for="description">Description</label>
+                <InputTextArea id="description" class="form-control" @bind-Value="discount.Description" />
+            </div>
+
+            <div class="form-group">
+                <label for="percent">Discount Percent</label>
+                <InputNumber id="percent" class="form-control" @bind-Value="discount.DiscountPercent" />
+            </div>
+
+            <div class="form-group">
+                <label for="isActive">Is Active</label>
+                <InputCheckbox id="isActive" class="form-control" @bind-Value="discount.IsActive" />
+            </div>
+
+            <button type="submit" class="btn btn-primary">Save Changes</button>
+        </EditForm>
+    }
+</div>
+
+@code {
+    [Parameter] public int id { get; set; }
+    private Discount? discount;
+    private string errorMessage = string.Empty;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            discount = await DiscountService.GetDiscountByIdAsync(id, CancellationToken.None);
+            if (discount == null)
+            {
+                errorMessage = "Discount not found.";
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Error loading discount: {ex.Message}";
+        }
+    }
+
+    private async Task SaveChanges()
+    {
+        if (discount != null)
+        {
+            try
+            {
+                await DiscountService.UpdateDiscountAsync(discount, CancellationToken.None);
+                NavigationManager.NavigateTo("/admin/discounts");
+            }
+            catch (Exception ex)
+            {
+                errorMessage = $"Error saving discount: {ex.Message}";
+            }
+        }
+    }
+}

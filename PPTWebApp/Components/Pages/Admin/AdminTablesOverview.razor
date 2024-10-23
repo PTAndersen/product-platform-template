@@ -85,7 +85,7 @@
 
 @code {
     private bool isAdmin = false;
-    private List<string> Tables = new List<string> { "Posts", "Products", "Users", "Product Categories", "Discounts" };
+    private List<string> Tables = new List<string> { "Posts", "Products", "Users", "Categories", "Discounts" };
     private string? SelectedTable;
     private List<string> TableHeaders = new List<string>();
     private List<Dictionary<string, object>> PaginatedEntities = new List<Dictionary<string, object>>();
@@ -164,7 +164,7 @@
                 }).ToList();
                 break;
 
-            case "Product Categories":
+            case "Categories":
                 TableHeaders = new List<string> { "ID", "Category Name", "Description" };
                 var categories = await ProductCategoryService.GetAllCategoriesAsync(CancellationToken.None);
                 PaginatedEntities = categories.Select(category => new Dictionary<string, object>
@@ -256,6 +256,6 @@
 
     private void InspectEntity(Dictionary<string, object> entity)
     {
-        Navigation.NavigateTo($"/admin/inspect/{SelectedTable}/{entity["ID"]}");
+        Navigation.NavigateTo($"/admin/edit/{SelectedTable}/{entity["ID"]}");
     }
 }

@@ -1,0 +1,201 @@
+﻿@page "/admin/edit/products/{id:int}"
+@using PPTWebApp.Data.Models
+@using PPTWebApp.Data.Services
+
+@inject ProductService ProductService
+@inject NavigationManager NavigationManager
+@rendermode InteractiveServer
+
+<div class="product-editor-container">
+    <h2>Edit Product</h2>
+
+    @if (!string.IsNullOrEmpty(errorMessage))
+    {
+        <div class="alert alert-danger">@errorMessage</div>
+    }
+    else if (product == null)
+    {
+        <div>Loading product details...</div>
+    }
+    else
+    {
+        <EditForm Model="product" OnValidSubmit="SaveChanges">
+            <div class="form-group">
+                <label for="name">Product Name</label>
+                <InputText id="name" class="form-control" @bind-Value="product.Name" />
+            </div>
+
+            <div class="form-group">
+                <label for="description">Description</label>
+                <InputTextArea id="description" class="form-control" @bind-Value="product.Description" />
+            </div>
+
+            <div class="form-group">
+                <label for="price">Price</label>
+                <InputNumber id="price" class="form-control" @bind-Value="product.Price" />
+            </div>
+
+            <div class="form-group">
+                <label for="sku">SKU</label>
+                <InputText id="sku" class="form-control" @bind-Value="product.SKU" />
+            </div>
+
+            <div class="form-group">
+                <label for="imageurl">Image URL</label>
+                <InputText id="imageurl" class="form-control" @bind-Value="product.ImageUrl" />
+            </div>
+
+            <div class="form-group">
+                <label for="imagecompromise">Image Compromise</label>
+                <InputSelect id="imagecompromise" class="form-control" @bind-Value="product.ImageCompromise">
+                    <option value="horizontal">Horizontal</option>
+                    <option value="vertical">Vertical</option>
+                    <option value="auto">Auto</option>
+                    <option value="never">Never</option>
+                </InputSelect>
+            </div>
+
+            <div class="form-group">
+                <label for="discount">Discount ID</label>
+                <InputNumber id="discount" class="form-control" @bind-Value="discountId" />
+
+                @if (discountId != null)
+                {
+                    <button type="button" class="btn btn-warning" @onclick="RemoveDiscount">Remove Discount</button>
+                    <button type="button" class="btn btn-info" @onclick="EditDiscount">Edit Discount</button>
+                }
+            </div>
+
+            <div class="form-group">
+                <label for="category">Product Category ID</label>
+                <InputNumber id="category" class="form-control" @bind-Value="categoryId" />
+
+                @if (categoryId != null)
+                {
+                    <button type="button" class="btn btn-warning" @onclick="RemoveCategory">Remove Category</button>
+                    <button type="button" class="btn btn-info" @onclick="EditCategory">Edit Category</button>
+                }
+            </div>
+
+            <div class="form-group">
+                <label for="inventory">Product Inventory ID</label>
+                <InputNumber id="inventory" class="form-control" @bind-Value="inventoryId" />
+
+                @if (inventoryId != null)
+                {
+                    <button type="button" class="btn btn-warning" @onclick="RemoveInventory">Remove Inventory</button>
+                    <button type="button" class="btn btn-info" @onclick="EditInventory">Edit Inventory</button>
+                }
+            </div>
+
+            <button type="submit" class="btn btn-primary">Save Changes</button>
+        </EditForm>
+    }
+</div>
+
+@code {
+    [Parameter] public int id { get; set; }
+    private Product? product;
+    private string errorMessage = string.Empty;
+
+    private int? discountId;
+    private int? categoryId;
+    private int? inventoryId;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            product = await ProductService.GetProductByIdAsync(id, CancellationToken.None);
+            if (product == null)
+            {
+                errorMessage = "Product not found.";
+            }
+            else
+            {
+                discountId = product.Discount?.Id;
+                categoryId = product.ProductCategory?.Id;
+                inventoryId = product.ProductInventory?.Id;
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Error loading product: {ex.Message}";
+        }
+    }
+
+    private async Task SaveChanges()
+    {
+        if (product != null)
+        {
+            try
+            {
+                if (discountId == null)
+                {
+                    product.Discount = null;
+                }
+                if (categoryId == null)
+                {
+                    product.ProductCategory = null;
+                }
+                if (inventoryId == null)
+                {
+                    product.ProductInventory = null;
+                }
+
+                await ProductService.UpdateProductAsync(product, CancellationToken.None);
+            }
+            catch (Exception ex)
+            {
+                errorMessage = $"Error saving product: {ex.Message}";
+            }
+        }
+    }
+
+    private Task RemoveDiscount()
+    {
+        discountId = null;
+        return Task.CompletedTask;
+    }
+
+    private Task EditDiscount()
+    {
+        if (discountId != null)
+        {
+            NavigationManager.NavigateTo($"/admin/edit/discounts/{discountId}");
+        }
+        return Task.CompletedTask;
+    }
+
+    private Task RemoveCategory()
+    {
+        categoryId = null;
+        return Task.CompletedTask;
+    }
+
+    private Task EditCategory()
+    {
+        if (categoryId != null)
+        {
+            NavigationManager.NavigateTo($"/admin/edit/categories/{categoryId}");
+        }
+        return Task.CompletedTask;
+    }
+
+    private Task RemoveInventory()
+    {
+        inventoryId = null;
+        return Task.CompletedTask;
+    }
+
+    private Task EditInventory()
+    {
+        if (inventoryId != null)
+        {
+            NavigationManager.NavigateTo($"/admin/edit/inventories/{inventoryId}");
+        }
+        return Task.CompletedTask;
+    }
+}
+
+

@@ -69,6 +69,8 @@ builder.Services.AddScoped<HighlightService>();
 builder.Services.AddScoped<BasketService>();
 builder.Services.AddScoped<IProductCategoryRepository>(provider => new ProductCategoryRepository(connectionString));
 builder.Services.AddScoped<ProductCategoryService>();
+builder.Services.AddScoped<IProductInventoryRepository>(provider => new ProductInventoryRepository(connectionString));
+builder.Services.AddScoped<ProductInventoryService>();
 builder.Services.AddScoped<IDiscountRepository>(provider => new DiscountRepository(connectionString));
 builder.Services.AddScoped<DiscountService>();
 builder.Services.AddScoped<IVisitorSessionRepository>(provider => new VisitorSessionRepository(connectionString));
