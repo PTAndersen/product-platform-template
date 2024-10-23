@@ -8,24 +8,24 @@
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
     text-align: center;
     width: 100%;
-    max-width: 300px; /* Control the maximum width of the post preview */
+    max-width: 300px;
     height: auto;
     box-sizing: border-box;
-    background-color: #f5f5f5; /* Light background to make it stand out */
+    background-color: #f5f5f5;
 }
 
 .image-horizontal {
     width: 100%;
     height: auto;
-    max-height: 200px; /* Restrict the max height for horizontal images */
-    object-fit: cover; /* Ensure the image scales properly */
+    max-height: 200px;
+    object-fit: cover;
 }
 
 .image-vertical {
     width: auto;
     height: 100%;
-    max-height: 300px; /* Restrict the max height for vertical images */
-    object-fit: cover; /* Ensure the image scales properly */
+    max-height: 300px;
+    object-fit: cover;
 }
 
 .post-info {

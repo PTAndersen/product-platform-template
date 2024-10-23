@@ -1,0 +1,139 @@
+﻿@page "/products/{id:int}"
+@using PPTWebApp.Data.Models
+@using PPTWebApp.Data.Services
+
+@inject ProductService ProductService
+@inject BasketService BasketService
+@inject NavigationManager NavigationManager
+@rendermode InteractiveServer
+
+@code {
+    [Parameter] public int id { get; set; }
+
+    private Product? product;
+    private int quantity = 1;
+    private string errorMessage = string.Empty;
+    private decimal discountedPrice = 0;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            product = await ProductService.GetProductByIdAsync(id, CancellationToken.None);
+            if (product == null)
+            {
+                errorMessage = "Product not found.";
+            }
+            else
+            {
+                CalculateDiscountedPrice();
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Error loading product: {ex.Message}";
+        }
+    }
+
+    private void CalculateDiscountedPrice()
+    {
+        if (product?.Discount != null && product.Discount.IsActive)
+        {
+            discountedPrice = product.Price - (product.Price * (product.Discount.DiscountPercent / 100));
+        }
+    }
+
+    private void IncrementQuantity()
+    {
+        quantity++;
+    }
+
+    private void DecrementQuantity()
+    {
+        if (quantity > 1)
+            quantity--;
+    }
+
+    private void AddToBasket()
+    {
+        if (product != null)
+        {
+            BasketService.AddToBasket(product, quantity);
+        }
+    }
+
+    private void GoBack()
+    {
+        NavigationManager.NavigateTo("/products");
+    }
+}
+
+@if (!string.IsNullOrEmpty(errorMessage))
+{
+    <div class="alert alert-danger">@errorMessage</div>
+}
+else if (product == null)
+{
+    <div>Loading product details...</div>
+}
+else
+{
+    <div class="product-container">
+        <button class="btn btn-link" @onclick="GoBack">
+            &larr; Go Back
+        </button>
+
+        <div class="product-layout">
+            <div class="image-container">
+                <img src="@product.ImageUrl" alt="@product.Name" class="img-fluid" />
+            </div>
+
+            <div class="product-details">
+                <h1>@product.Name</h1>
+                <p>@product.Description</p>
+
+                <p>
+                    <strong>Price:</strong>
+                    @if (product.Discount != null && product.Discount.IsActive)
+                    {
+                        <span class="text-muted text-decoration-line-through">@product.Price.ToString("C")</span>
+                        <span class="text-danger"> @discountedPrice.ToString("C")</span>
+                        <small class="text-success">(Save @product.Discount.DiscountPercent%)</small>
+                    }
+                    else
+                    {
+                        <span>@product.Price.ToString("C")</span>
+                    }
+                </p>
+
+                @if (product.ProductCategory != null)
+                {
+                    <p><strong>Category:</strong> @product.ProductCategory.Name</p>
+                }
+
+                @if (product.ProductInventory != null)
+                {
+                    <p><strong>In Stock:</strong> @product.ProductInventory.Quantity items available</p>
+                }
+
+                @if (product.Discount != null && product.Discount.IsActive)
+                {
+                    <div class="discount-details">
+                        <h5>Discount: @product.Discount.Name</h5>
+                        <p>@product.Discount.Description</p>
+                        <p><strong>Discount Percent:</strong> @product.Discount.DiscountPercent%</p>
+                    </div>
+                }
+
+                <div class="product-actions">
+                    <div class="quantity-control">
+                        <button class="btn btn-secondary" @onclick="DecrementQuantity">-</button>
+                        <span class="quantity">@quantity</span>
+                        <button class="btn btn-secondary" @onclick="IncrementQuantity">+</button>
+                    </div>
+                    <button class="btn btn-primary" @onclick="AddToBasket">Add to Basket</button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
