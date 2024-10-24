@@ -17,8 +17,10 @@ if (string.IsNullOrWhiteSpace(connectionString))
     throw new InvalidOperationException("Connection string 'DefaultConnection' is either missing or empty.");
 }
 
+builder.Services.AddScoped<IUserProfileRepository>(provider => new UserProfileRepository(connectionString));
+//builder.Services.AddScoped<UserProfileService>();
 
-builder.Services.AddScoped<IApplicationUserRepository>(provider => new ApplicationUserRepository(connectionString));
+builder.Services.AddScoped<IApplicationUserRepository>(provider => new ApplicationUserRepository(connectionString, provider.GetRequiredService<IUserProfileRepository>()));
 builder.Services.AddScoped<IUserStore<ApplicationUser>>(provider =>
 {
     var userRepository = provider.GetRequiredService<IApplicationUserRepository>();

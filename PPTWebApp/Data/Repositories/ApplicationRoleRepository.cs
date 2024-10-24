@@ -30,19 +30,36 @@ namespace PPTWebApp.Data.Repositories
 
             role.NormalizedName = role.Name.ToUpperInvariant();
 
-            using (var connection = new NpgsqlConnection(_connectionString))
+            try
             {
-                var command = new NpgsqlCommand("INSERT INTO aspnetroles (name, normalizedname) VALUES (@Name, @NormalizedName)", connection);
-                command.Parameters.AddWithValue("@Name", role.Name);
-                command.Parameters.AddWithValue("@NormalizedName", role.NormalizedName);
+                using (var connection = new NpgsqlConnection(_connectionString))
+                {
+                    var command = new NpgsqlCommand("INSERT INTO aspnetroles (name, normalizedname) VALUES (@Name, @NormalizedName)", connection);
+                    command.Parameters.AddWithValue("@Name", role.Name);
+                    command.Parameters.AddWithValue("@NormalizedName", role.NormalizedName);
 
-                await connection.OpenAsync(cancellationToken);
-                await command.ExecuteNonQueryAsync(cancellationToken);
+                    await connection.OpenAsync(cancellationToken);
+                    await command.ExecuteNonQueryAsync(cancellationToken);
+                }
+
+                return IdentityResult.Success;
             }
-
-            return IdentityResult.Success;
+            catch (OperationCanceledException)
+            {
+                Console.WriteLine("Operation was canceled.");
+                throw;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error creating role: {ex.Message}");
+                // TODO: Log error
+                return IdentityResult.Failed(new IdentityError
+                {
+                    Code = "RoleCreationFailed",
+                    Description = $"An error occurred while creating the role: {ex.Message}"
+                });
+            }
         }
-
 
         public async Task<IdentityResult> UpdateRoleAsync(IdentityRole role, CancellationToken cancellationToken)
         {

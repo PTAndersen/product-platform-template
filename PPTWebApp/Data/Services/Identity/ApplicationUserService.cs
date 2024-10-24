@@ -1,7 +1,5 @@
 ﻿using Microsoft.AspNetCore.Identity;
 using PPTWebApp.Data.Models;
-using System.Threading;
-using System.Threading.Tasks;
 
 public class ApplicationUserService : IUserStore<ApplicationUser>, IUserPasswordStore<ApplicationUser>, IUserRoleStore<ApplicationUser>, IUserEmailStore<ApplicationUser>
 {

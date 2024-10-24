@@ -4,33 +4,33 @@ using PPTWebApp.Data.Repositories.Interfaces;
 
 namespace PPTWebApp.Data.Repositories
 {
-    public class PostRepository : IPostRepository
+    public class UserProfileRepository : IUserProfileRepository
     {
         private readonly string _connectionString;
 
-        public PostRepository(string connectionString)
+        public UserProfileRepository(string connectionString)
         {
             _connectionString = connectionString;
         }
 
-        private static Post MapPostFromReader(NpgsqlDataReader reader)
+        private static UserProfile MapUserProfileFromReader(NpgsqlDataReader reader)
         {
-            return new Post
+            return new UserProfile
             {
-                Id = reader.GetInt32(reader.GetOrdinal("id")),
-                Title = reader.GetString(reader.GetOrdinal("title")),
-                Content = reader.GetString(reader.GetOrdinal("content")),           
-                ImageUrl = reader.GetString(reader.GetOrdinal("imageurl")),
-                ImageCompromise = reader.GetString(reader.GetOrdinal("imagecompromise")),
-                DatePosted = reader.GetDateTime(reader.GetOrdinal("dateposted"))
+                UserId = reader.GetGuid(reader.GetOrdinal("userid")),
+                FirstName = reader.GetString(reader.GetOrdinal("firstname")),
+                LastName = reader.GetString(reader.GetOrdinal("lastname")),
+                Telephone = reader.IsDBNull(reader.GetOrdinal("telephone")) ? null : reader.GetString(reader.GetOrdinal("telephone")),
+                CreatedAt = reader.GetDateTime(reader.GetOrdinal("createdat")),
+                ModifiedAt = reader.IsDBNull(reader.GetOrdinal("modifiedat")) ? (DateTime?)null : reader.GetDateTime(reader.GetOrdinal("modifiedat"))
             };
         }
 
-        public async Task<IEnumerable<Post>> GetPostsInRangeAsync(string? keyword, int startIndex, int range, CancellationToken cancellationToken)
+        public async Task<IEnumerable<UserProfile>> GetUserProfilesInRangeAsync(int startIndex, int range, CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
 
-            var posts = new List<Post>();
+            var userProfiles = new List<UserProfile>();
 
             try
             {
@@ -40,17 +40,12 @@ namespace PPTWebApp.Data.Repositories
 
                     string query = @"
                         SELECT *
-                        FROM posts"
-                                + (string.IsNullOrEmpty(keyword) ? "" : " WHERE title ILIKE '%' || @Keyword || '%'") +
-                                @" ORDER BY id 
+                        FROM userprofiles
+                        ORDER BY userid 
                         OFFSET @StartIndex LIMIT @Range";
 
                     using (var command = new NpgsqlCommand(query, connection))
                     {
-                        if (!string.IsNullOrEmpty(keyword))
-                        {
-                            command.Parameters.AddWithValue("@Keyword", keyword);
-                        }
                         command.Parameters.AddWithValue("@StartIndex", startIndex);
                         command.Parameters.AddWithValue("@Range", range);
 
@@ -58,7 +53,7 @@ namespace PPTWebApp.Data.Repositories
                         {
                             while (await reader.ReadAsync(cancellationToken))
                             {
-                                posts.Add(MapPostFromReader(reader));
+                                userProfiles.Add(MapUserProfileFromReader(reader));
                             }
                         }
                     }
@@ -72,15 +67,15 @@ namespace PPTWebApp.Data.Repositories
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Error retrieving posts: {ex.Message}");
+                Console.WriteLine($"Error retrieving user profiles: {ex.Message}");
                 //TODO: Log error
                 throw;
             }
 
-            return posts;
+            return userProfiles;
         }
 
-        public async Task<int> GetTotalPostCountAsync(string? keyword, CancellationToken cancellationToken)
+        public async Task<int> GetTotalUserProfileCountAsync(CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
 
@@ -92,15 +87,10 @@ namespace PPTWebApp.Data.Repositories
                 {
                     await connection.OpenAsync(cancellationToken);
 
-                    string query = "SELECT COUNT(*) FROM posts"
-                        + (string.IsNullOrEmpty(keyword) ? "" : " WHERE title ILIKE '%' || @Keyword || '%'");
+                    string query = "SELECT COUNT(*) FROM userprofiles";
 
                     using (var command = new NpgsqlCommand(query, connection))
                     {
-                        if (!string.IsNullOrEmpty(keyword))
-                        {
-                            command.Parameters.AddWithValue("@Keyword", keyword);
-                        }
                         totalCount = Convert.ToInt32(await command.ExecuteScalarAsync(cancellationToken));
                     }
                 }
@@ -113,7 +103,7 @@ namespace PPTWebApp.Data.Repositories
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Error getting total post count: {ex.Message}");
+                Console.WriteLine($"Error getting total user profile count: {ex.Message}");
                 //TODO: Log error
                 throw;
             }
@@ -121,11 +111,11 @@ namespace PPTWebApp.Data.Repositories
             return totalCount;
         }
 
-        public async Task<Post?> GetPostByIdAsync(int id, CancellationToken cancellationToken)
+        public async Task<UserProfile?> GetUserProfileByIdAsync(Guid userId, CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
 
-            Post? post = null;
+            UserProfile? userProfile = null;
 
             try
             {
@@ -133,15 +123,15 @@ namespace PPTWebApp.Data.Repositories
                 {
                     await connection.OpenAsync(cancellationToken);
 
-                    using (var command = new NpgsqlCommand("SELECT * FROM posts WHERE id = @Id", connection))
+                    using (var command = new NpgsqlCommand("SELECT * FROM userprofiles WHERE userid = @UserId", connection))
                     {
-                        command.Parameters.AddWithValue("@Id", id);
+                        command.Parameters.AddWithValue("@UserId", userId);
 
                         using (var reader = await command.ExecuteReaderAsync(cancellationToken))
                         {
                             if (await reader.ReadAsync(cancellationToken))
                             {
-                                post = MapPostFromReader(reader);
+                                userProfile = MapUserProfileFromReader(reader);
                             }
                         }
                     }
@@ -155,15 +145,15 @@ namespace PPTWebApp.Data.Repositories
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Error getting post by ID: {ex.Message}");
+                Console.WriteLine($"Error getting user profile by ID: {ex.Message}");
                 //TODO: Log error
                 throw;
             }
 
-            return post;
+            return userProfile;
         }
 
-        public async Task AddPostAsync(Post post, CancellationToken cancellationToken)
+        public async Task AddUserProfileAsync(UserProfile userProfile, CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
 
@@ -174,13 +164,14 @@ namespace PPTWebApp.Data.Repositories
                     await connection.OpenAsync(cancellationToken);
 
                     using (var command = new NpgsqlCommand(
-                        "INSERT INTO posts (title, content, imageurl, imagecompromise, dateposted) VALUES (@Title, @Content, @ImageUrl, @ImageCompromise, @DatePosted)", connection))
+                        "INSERT INTO userprofiles (userid, firstname, lastname, telephone, createdat, modifiedat) VALUES (@UserId, @FirstName, @LastName, @Telephone, @CreatedAt, @ModifiedAt)", connection))
                     {
-                        command.Parameters.AddWithValue("@Title", post.Title);
-                        command.Parameters.AddWithValue("@Content", post.Content);
-                        command.Parameters.AddWithValue("@ImageUrl", post.ImageUrl);
-                        command.Parameters.AddWithValue("@ImageCompromise", post.ImageCompromise);
-                        command.Parameters.AddWithValue("@DatePosted", post.DatePosted);
+                        command.Parameters.AddWithValue("@UserId", userProfile.UserId);
+                        command.Parameters.AddWithValue("@FirstName", userProfile.FirstName);
+                        command.Parameters.AddWithValue("@LastName", userProfile.LastName);
+                        command.Parameters.AddWithValue("@Telephone", (object?)userProfile.Telephone ?? DBNull.Value);
+                        command.Parameters.AddWithValue("@CreatedAt", userProfile.CreatedAt);
+                        command.Parameters.AddWithValue("@ModifiedAt", (object?)userProfile.ModifiedAt ?? DBNull.Value);
 
                         await command.ExecuteNonQueryAsync(cancellationToken);
                     }
@@ -194,13 +185,13 @@ namespace PPTWebApp.Data.Repositories
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Error adding post: {ex.Message}");
+                Console.WriteLine($"Error adding user profile: {ex.Message}");
                 //TODO: Log error
                 throw;
             }
         }
 
-        public async Task UpdatePostAsync(Post post, CancellationToken cancellationToken)
+        public async Task UpdateUserProfileAsync(UserProfile userProfile, CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
 
@@ -211,14 +202,13 @@ namespace PPTWebApp.Data.Repositories
                     await connection.OpenAsync(cancellationToken);
 
                     using (var command = new NpgsqlCommand(
-                        "UPDATE posts SET title = @Title, content = @Content, imageurl = @ImageUrl, imagecompromise = @ImageCompromise, dateposted = @DatePosted WHERE id = @Id", connection))
+                        "UPDATE userprofiles SET firstname = @FirstName, lastname = @LastName, telephone = @Telephone, modifiedat = @ModifiedAt WHERE userid = @UserId", connection))
                     {
-                        command.Parameters.AddWithValue("@Id", post.Id);
-                        command.Parameters.AddWithValue("@Title", post.Title);
-                        command.Parameters.AddWithValue("@Content", post.Content);
-                        command.Parameters.AddWithValue("@ImageUrl", post.ImageUrl);
-                        command.Parameters.AddWithValue("@ImageCompromise", post.ImageCompromise);
-                        command.Parameters.AddWithValue("@DatePosted", post.DatePosted);
+                        command.Parameters.AddWithValue("@UserId", userProfile.UserId);
+                        command.Parameters.AddWithValue("@FirstName", userProfile.FirstName);
+                        command.Parameters.AddWithValue("@LastName", userProfile.LastName);
+                        command.Parameters.AddWithValue("@Telephone", (object?)userProfile.Telephone ?? DBNull.Value);
+                        command.Parameters.AddWithValue("@ModifiedAt", (object?)userProfile.ModifiedAt ?? DBNull.Value);
 
                         await command.ExecuteNonQueryAsync(cancellationToken);
                     }
@@ -232,13 +222,13 @@ namespace PPTWebApp.Data.Repositories
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Error updating post: {ex.Message}");
+                Console.WriteLine($"Error updating user profile: {ex.Message}");
                 //TODO: Log error
                 throw;
             }
         }
 
-        public async Task DeletePostAsync(int id, CancellationToken cancellationToken)
+        public async Task DeleteUserProfileAsync(Guid userId, CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
 
@@ -248,9 +238,9 @@ namespace PPTWebApp.Data.Repositories
                 {
                     await connection.OpenAsync(cancellationToken);
 
-                    using (var command = new NpgsqlCommand("DELETE FROM posts WHERE id = @Id", connection))
+                    using (var command = new NpgsqlCommand("DELETE FROM userprofiles WHERE userid = @UserId", connection))
                     {
-                        command.Parameters.AddWithValue("@Id", id);
+                        command.Parameters.AddWithValue("@UserId", userId);
                         await command.ExecuteNonQueryAsync(cancellationToken);
                     }
                 }
@@ -263,7 +253,7 @@ namespace PPTWebApp.Data.Repositories
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Error deleting post: {ex.Message}");
+                Console.WriteLine($"Error deleting user profile: {ex.Message}");
                 //TODO: Log error
                 throw;
             }

@@ -1,5 +1,4 @@
 ﻿using PPTWebApp.Data.Models;
-using System.Threading;
 
 
 namespace PPTWebApp.Data.Repositories.Interfaces

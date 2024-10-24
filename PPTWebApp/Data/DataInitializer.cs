@@ -571,7 +571,14 @@ namespace PPTWebApp.Data
                 {
                     UserName = "admin@example.com",
                     Email = "admin@example.com",
-                    EmailConfirmed = true
+                    EmailConfirmed = true,
+                    Profile = new UserProfile
+                    {
+                        FirstName = "Admin",
+                        LastName = "User",
+                        Telephone = "1234567890",
+                        CreatedAt = DateTime.UtcNow
+                    }
                 };
 
                 adminUser.NormalizedUserName = adminUser.UserName.ToUpper();
@@ -599,7 +606,14 @@ namespace PPTWebApp.Data
                 {
                     UserName = "user@example.com",
                     Email = "user@example.com",
-                    EmailConfirmed = true
+                    EmailConfirmed = true,
+                    Profile = new UserProfile
+                    {
+                        FirstName = "Regular",
+                        LastName = "User",
+                        Telephone = "0987654321",
+                        CreatedAt = DateTime.UtcNow
+                    }
                 };
 
                 regularUser.NormalizedUserName = regularUser.UserName.ToUpper();

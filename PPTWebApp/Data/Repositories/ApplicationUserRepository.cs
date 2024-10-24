@@ -1,23 +1,35 @@
 ﻿using Npgsql;
 using System.Data;
 using PPTWebApp.Data.Models;
-using System.Threading;
+using PPTWebApp.Data.Repositories.Interfaces;
 
 public class ApplicationUserRepository : IApplicationUserRepository
 {
     private readonly string _connectionString;
 
-    
-    public ApplicationUserRepository(string connectionString)
+    private readonly IUserProfileRepository _userProfileRepository;
+
+    public ApplicationUserRepository(string connectionString, IUserProfileRepository userProfileRepository)
     {
-        _connectionString = connectionString;
+        _connectionString = connectionString ?? throw new ArgumentNullException(nameof(connectionString));
+        _userProfileRepository = userProfileRepository ?? throw new ArgumentNullException(nameof(connectionString));
     }
 
-    private static ApplicationUser MapToApplicationUser(NpgsqlDataReader reader)
+    private async Task<ApplicationUser> MapToApplicationUser(NpgsqlDataReader reader, CancellationToken cancellationToken)
     {
-        return new ApplicationUser
+        var userId = reader.GetGuid(reader.GetOrdinal("id")).ToString();
+        //TODO: Handle NULL better?
+        var userProfile = await _userProfileRepository.GetUserProfileByIdAsync(Guid.Parse(userId), cancellationToken) ?? new UserProfile
+            {
+                UserId = Guid.Parse(userId),
+                FirstName = string.Empty,
+                LastName = string.Empty,
+                Telephone = string.Empty,
+                CreatedAt = DateTime.UtcNow
+            };
+        var applicationUser = new ApplicationUser
         {
-            Id = reader.GetGuid(reader.GetOrdinal("id")).ToString(),
+            Id = userId,
             UserName = reader.IsDBNull(reader.GetOrdinal("username")) ? null : reader.GetString(reader.GetOrdinal("username")),
             NormalizedUserName = reader.IsDBNull(reader.GetOrdinal("normalizedusername")) ? null : reader.GetString(reader.GetOrdinal("normalizedusername")),
             Email = reader.IsDBNull(reader.GetOrdinal("email")) ? null : reader.GetString(reader.GetOrdinal("email")),
@@ -31,8 +43,11 @@ public class ApplicationUserRepository : IApplicationUserRepository
             AccessFailedCount = reader.IsDBNull(reader.GetOrdinal("accessfailedcount")) ? 0 : reader.GetInt32(reader.GetOrdinal("accessfailedcount")),
             SecurityStamp = reader.IsDBNull(reader.GetOrdinal("securitystamp")) ? null : reader.GetString(reader.GetOrdinal("securitystamp")),
             ConcurrencyStamp = reader.IsDBNull(reader.GetOrdinal("concurrencystamp")) ? null : reader.GetString(reader.GetOrdinal("concurrencystamp")),
-            LockoutEnd = reader.IsDBNull(reader.GetOrdinal("lockoutend")) ? (DateTimeOffset?)null : reader.GetFieldValue<DateTimeOffset>(reader.GetOrdinal("lockoutend"))
+            LockoutEnd = reader.IsDBNull(reader.GetOrdinal("lockoutend")) ? (DateTimeOffset?)null : reader.GetFieldValue<DateTimeOffset>(reader.GetOrdinal("lockoutend")),
+            Profile = userProfile
         };
+
+        return applicationUser;
     }
 
     #region User Management
@@ -41,17 +56,31 @@ public class ApplicationUserRepository : IApplicationUserRepository
     {
         cancellationToken.ThrowIfCancellationRequested();
 
-        using (var connection = new NpgsqlConnection(_connectionString))
+        try
         {
-            var command = new NpgsqlCommand(
-                @"INSERT INTO aspnetuserroles (userid, roleid) 
-              SELECT @UserId, id FROM aspnetroles WHERE normalizedname = @RoleName", connection);
+            using (var connection = new NpgsqlConnection(_connectionString))
+            {
+                var command = new NpgsqlCommand(
+                    @"INSERT INTO aspnetuserroles (userid, roleid) 
+                  SELECT @UserId, id FROM aspnetroles WHERE normalizedname = @RoleName", connection);
 
-            command.Parameters.AddWithValue("@UserId", Guid.Parse(user.Id));
-            command.Parameters.AddWithValue("@RoleName", roleName.ToUpper());
+                command.Parameters.AddWithValue("@UserId", Guid.Parse(user.Id));
+                command.Parameters.AddWithValue("@RoleName", roleName.ToUpper());
 
-            await connection.OpenAsync(cancellationToken);
-            await command.ExecuteNonQueryAsync(cancellationToken);
+                await connection.OpenAsync(cancellationToken);
+                await command.ExecuteNonQueryAsync(cancellationToken);
+            }
+        }
+        catch (OperationCanceledException)
+        {
+            Console.WriteLine("Operation was canceled.");
+            throw;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error adding user to role: {ex.Message}");
+            // TODO: Log error
+            throw;
         }
     }
 
@@ -59,32 +88,53 @@ public class ApplicationUserRepository : IApplicationUserRepository
     {
         cancellationToken.ThrowIfCancellationRequested();
 
-        using (var connection = new NpgsqlConnection(_connectionString))
+        try
         {
-            var command = new NpgsqlCommand(
-                @"INSERT INTO aspnetusers 
-              (id, username, passwordhash, normalizedusername, email, normalizedemail, emailconfirmed, phonenumber, phonenumberconfirmed, twofactorenabled, lockoutenabled, accessfailedcount, securitystamp, concurrencystamp, lockoutend)
-              VALUES 
-              (@Id, @UserName, @PasswordHash, @NormalizedUserName, @Email, @NormalizedEmail, @EmailConfirmed, @PhoneNumber, @PhoneNumberConfirmed, @TwoFactorEnabled, @LockoutEnabled, @AccessFailedCount, @SecurityStamp, @ConcurrencyStamp, @LockoutEnd)", connection);
+            using (var connection = new NpgsqlConnection(_connectionString))
+            {
+                await connection.OpenAsync(cancellationToken);
 
-            command.Parameters.AddWithValue("@Id", Guid.Parse(user.Id));
-            command.Parameters.AddWithValue("@UserName", user.UserName ?? (object)DBNull.Value);
-            command.Parameters.AddWithValue("@PasswordHash", user.PasswordHash ?? (object)DBNull.Value);
-            command.Parameters.AddWithValue("@NormalizedUserName", user.NormalizedUserName ?? (object)DBNull.Value);
-            command.Parameters.AddWithValue("@Email", user.Email ?? (object)DBNull.Value);
-            command.Parameters.AddWithValue("@NormalizedEmail", user.NormalizedEmail ?? (object)DBNull.Value);
-            command.Parameters.AddWithValue("@EmailConfirmed", user.EmailConfirmed);
-            command.Parameters.AddWithValue("@PhoneNumber", user.PhoneNumber ?? (object)DBNull.Value);
-            command.Parameters.AddWithValue("@PhoneNumberConfirmed", user.PhoneNumberConfirmed);
-            command.Parameters.AddWithValue("@TwoFactorEnabled", user.TwoFactorEnabled);
-            command.Parameters.AddWithValue("@LockoutEnabled", user.LockoutEnabled);
-            command.Parameters.AddWithValue("@AccessFailedCount", user.AccessFailedCount);
-            command.Parameters.AddWithValue("@SecurityStamp", user.SecurityStamp ?? (object)DBNull.Value);
-            command.Parameters.AddWithValue("@ConcurrencyStamp", user.ConcurrencyStamp ?? (object)DBNull.Value);
-            command.Parameters.AddWithValue("@LockoutEnd", user.LockoutEnd ?? (object)DBNull.Value);
+                var command = new NpgsqlCommand(
+                    @"INSERT INTO aspnetusers 
+                (id, username, passwordhash, normalizedusername, email, normalizedemail, emailconfirmed, phonenumber, phonenumberconfirmed, twofactorenabled, lockoutenabled, accessfailedcount, securitystamp, concurrencystamp, lockoutend)
+                VALUES 
+                (@Id, @UserName, @PasswordHash, @NormalizedUserName, @Email, @NormalizedEmail, @EmailConfirmed, @PhoneNumber, @PhoneNumberConfirmed, @TwoFactorEnabled, @LockoutEnabled, @AccessFailedCount, @SecurityStamp, @ConcurrencyStamp, @LockoutEnd)",
+                    connection);
 
-            await connection.OpenAsync(cancellationToken);
-            await command.ExecuteNonQueryAsync(cancellationToken);
+                command.Parameters.AddWithValue("@Id", Guid.Parse(user.Id));
+                command.Parameters.AddWithValue("@UserName", user.UserName ?? (object)DBNull.Value);
+                command.Parameters.AddWithValue("@PasswordHash", user.PasswordHash ?? (object)DBNull.Value);
+                command.Parameters.AddWithValue("@NormalizedUserName", user.NormalizedUserName ?? (object)DBNull.Value);
+                command.Parameters.AddWithValue("@Email", user.Email ?? (object)DBNull.Value);
+                command.Parameters.AddWithValue("@NormalizedEmail", user.NormalizedEmail ?? (object)DBNull.Value);
+                command.Parameters.AddWithValue("@EmailConfirmed", user.EmailConfirmed);
+                command.Parameters.AddWithValue("@PhoneNumber", user.PhoneNumber ?? (object)DBNull.Value);
+                command.Parameters.AddWithValue("@PhoneNumberConfirmed", user.PhoneNumberConfirmed);
+                command.Parameters.AddWithValue("@TwoFactorEnabled", user.TwoFactorEnabled);
+                command.Parameters.AddWithValue("@LockoutEnabled", user.LockoutEnabled);
+                command.Parameters.AddWithValue("@AccessFailedCount", user.AccessFailedCount);
+                command.Parameters.AddWithValue("@SecurityStamp", user.SecurityStamp ?? (object)DBNull.Value);
+                command.Parameters.AddWithValue("@ConcurrencyStamp", user.ConcurrencyStamp ?? (object)DBNull.Value);
+                command.Parameters.AddWithValue("@LockoutEnd", user.LockoutEnd ?? (object)DBNull.Value);
+
+                await command.ExecuteNonQueryAsync(cancellationToken);
+
+                if (user.Profile != null)
+                {
+                    user.Profile.UserId = Guid.Parse(user.Id);
+                    await _userProfileRepository.AddUserProfileAsync(user.Profile, cancellationToken);
+                }
+            }
+        }
+        catch (OperationCanceledException)
+        {
+            Console.WriteLine("Operation was canceled.");
+            throw;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error adding user: {ex.Message}");
+            throw;
         }
     }
 
@@ -92,34 +142,81 @@ public class ApplicationUserRepository : IApplicationUserRepository
     {
         cancellationToken.ThrowIfCancellationRequested();
 
-        using (var connection = new NpgsqlConnection(_connectionString))
+        try
         {
-            var command = new NpgsqlCommand("DELETE FROM aspnetusers WHERE id = @UserId", connection);
-            command.Parameters.Add("@UserId", NpgsqlTypes.NpgsqlDbType.Uuid).Value = Guid.Parse(userId);
+            using (var connection = new NpgsqlConnection(_connectionString))
+            {
+                await connection.OpenAsync(cancellationToken);
 
-            await connection.OpenAsync(cancellationToken);
-            await command.ExecuteNonQueryAsync(cancellationToken);
+                using (var transaction = await connection.BeginTransactionAsync(cancellationToken))
+                {
+                    try
+                    {
+                        var command = new NpgsqlCommand("DELETE FROM aspnetusers WHERE id = @UserId", connection, transaction);
+                        command.Parameters.AddWithValue("@UserId", Guid.Parse(userId));
+
+                        await command.ExecuteNonQueryAsync(cancellationToken);
+
+                        await _userProfileRepository.DeleteUserProfileAsync(Guid.Parse(userId), cancellationToken);
+
+                        await transaction.CommitAsync(cancellationToken);
+                    }
+                    catch (Exception ex)
+                    {
+                        await transaction.RollbackAsync(cancellationToken);
+                        Console.WriteLine($"Error deleting user and profile: {ex.Message}");
+                        // TODO: Log error
+                        throw;
+                    }
+                }
+            }
+        }
+        catch (OperationCanceledException)
+        {
+            Console.WriteLine("Operation was canceled.");
+            throw;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error deleting user: {ex.Message}");
+            // TODO: Log error
+            throw;
         }
     }
+
 
     public async Task<ApplicationUser?> GetUserByEmailAsync(string normalizedEmail, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
 
-        using (var connection = new NpgsqlConnection(_connectionString))
+        try
         {
-            var command = new NpgsqlCommand(
-                "SELECT * FROM aspnetusers WHERE normalizedemail = @NormalizedEmail", connection);
-            command.Parameters.AddWithValue("@NormalizedEmail", normalizedEmail);
-
-            await connection.OpenAsync(cancellationToken);
-            using (var reader = await command.ExecuteReaderAsync(CommandBehavior.SingleRow, cancellationToken))
+            using (var connection = new NpgsqlConnection(_connectionString))
             {
-                if (await reader.ReadAsync(cancellationToken))
+                var command = new NpgsqlCommand(
+                    "SELECT * FROM aspnetusers WHERE normalizedemail = @NormalizedEmail", connection);
+                command.Parameters.AddWithValue("@NormalizedEmail", normalizedEmail);
+
+                await connection.OpenAsync(cancellationToken);
+                using (var reader = await command.ExecuteReaderAsync(CommandBehavior.SingleRow, cancellationToken))
                 {
-                    return MapToApplicationUser(reader);
+                    if (await reader.ReadAsync(cancellationToken))
+                    {
+                        return await MapToApplicationUser(reader, cancellationToken);
+                    }
                 }
             }
+        }
+        catch (OperationCanceledException)
+        {
+            Console.WriteLine("Operation was canceled.");
+            throw;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error retrieving user by email: {ex.Message}");
+            // TODO: Log error
+            throw;
         }
 
         return null;
@@ -129,20 +226,34 @@ public class ApplicationUserRepository : IApplicationUserRepository
     {
         cancellationToken.ThrowIfCancellationRequested();
 
-        using (var connection = new NpgsqlConnection(_connectionString))
+        try
         {
-            var command = new NpgsqlCommand(
-                "SELECT * FROM aspnetusers WHERE id = @UserId", connection);
-            command.Parameters.Add("@UserId", NpgsqlTypes.NpgsqlDbType.Uuid).Value = Guid.Parse(userId);
-
-            await connection.OpenAsync(cancellationToken);
-            using (var reader = await command.ExecuteReaderAsync(CommandBehavior.SingleRow, cancellationToken))
+            using (var connection = new NpgsqlConnection(_connectionString))
             {
-                if (await reader.ReadAsync(cancellationToken))
+                var command = new NpgsqlCommand(
+                    "SELECT * FROM aspnetusers WHERE id = @UserId", connection);
+                command.Parameters.Add("@UserId", NpgsqlTypes.NpgsqlDbType.Uuid).Value = Guid.Parse(userId);
+
+                await connection.OpenAsync(cancellationToken);
+                using (var reader = await command.ExecuteReaderAsync(CommandBehavior.SingleRow, cancellationToken))
                 {
-                    return MapToApplicationUser(reader);
+                    if (await reader.ReadAsync(cancellationToken))
+                    {
+                        return await MapToApplicationUser(reader, cancellationToken);
+                    }
                 }
             }
+        }
+        catch (OperationCanceledException)
+        {
+            Console.WriteLine("Operation was canceled.");
+            throw;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error retrieving user by ID: {ex.Message}");
+            // TODO: Log error
+            throw;
         }
 
         return null;
@@ -152,20 +263,34 @@ public class ApplicationUserRepository : IApplicationUserRepository
     {
         cancellationToken.ThrowIfCancellationRequested();
 
-        using (var connection = new NpgsqlConnection(_connectionString))
+        try
         {
-            var command = new NpgsqlCommand(
-                "SELECT * FROM aspnetusers WHERE normalizedusername = @NormalizedUserName", connection);
-            command.Parameters.AddWithValue("@NormalizedUserName", normalizedUserName);
-
-            await connection.OpenAsync(cancellationToken);
-            using (var reader = await command.ExecuteReaderAsync(CommandBehavior.SingleRow, cancellationToken))
+            using (var connection = new NpgsqlConnection(_connectionString))
             {
-                if (await reader.ReadAsync(cancellationToken))
+                var command = new NpgsqlCommand(
+                    "SELECT * FROM aspnetusers WHERE normalizedusername = @NormalizedUserName", connection);
+                command.Parameters.AddWithValue("@NormalizedUserName", normalizedUserName);
+
+                await connection.OpenAsync(cancellationToken);
+                using (var reader = await command.ExecuteReaderAsync(CommandBehavior.SingleRow, cancellationToken))
                 {
-                    return MapToApplicationUser(reader);
+                    if (await reader.ReadAsync(cancellationToken))
+                    {
+                        return await MapToApplicationUser(reader, cancellationToken);
+                    }
                 }
             }
+        }
+        catch (OperationCanceledException)
+        {
+            Console.WriteLine("Operation was canceled.");
+            throw;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error retrieving user by name: {ex.Message}");
+            // TODO: Log error
+            throw;
         }
 
         return null;
@@ -175,46 +300,73 @@ public class ApplicationUserRepository : IApplicationUserRepository
     {
         cancellationToken.ThrowIfCancellationRequested();
 
-        using (var connection = new NpgsqlConnection(_connectionString))
+        try
         {
-            var command = new NpgsqlCommand(
-                @"UPDATE aspnetusers 
-              SET username = @UserName, 
-                  passwordhash = @PasswordHash, 
-                  normalizedusername = @NormalizedUserName,
-                  email = @Email,
-                  normalizedemail = @NormalizedEmail,
-                  emailconfirmed = @EmailConfirmed,
-                  phonenumber = @PhoneNumber,
-                  phonenumberconfirmed = @PhoneNumberConfirmed,
-                  twofactorenabled = @TwoFactorEnabled,
-                  lockoutenabled = @LockoutEnabled,
-                  accessfailedcount = @AccessFailedCount,
-                  securitystamp = @SecurityStamp,
-                  concurrencystamp = @ConcurrencyStamp,
-                  lockoutend = @LockoutEnd
-              WHERE id = @UserId", connection);
+            using (var connection = new NpgsqlConnection(_connectionString))
+            {
+                await connection.OpenAsync(cancellationToken);
 
-            command.Parameters.AddWithValue("@UserName", user.UserName ?? (object)DBNull.Value);
-            command.Parameters.AddWithValue("@PasswordHash", user.PasswordHash ?? (object)DBNull.Value);
-            command.Parameters.AddWithValue("@NormalizedUserName", user.NormalizedUserName ?? (object)DBNull.Value);
-            command.Parameters.AddWithValue("@Email", user.Email ?? (object)DBNull.Value);
-            command.Parameters.AddWithValue("@NormalizedEmail", user.NormalizedEmail ?? (object)DBNull.Value);
-            command.Parameters.AddWithValue("@EmailConfirmed", user.EmailConfirmed);
-            command.Parameters.AddWithValue("@PhoneNumber", user.PhoneNumber ?? (object)DBNull.Value);
-            command.Parameters.AddWithValue("@PhoneNumberConfirmed", user.PhoneNumberConfirmed);
-            command.Parameters.AddWithValue("@TwoFactorEnabled", user.TwoFactorEnabled);
-            command.Parameters.AddWithValue("@LockoutEnabled", user.LockoutEnabled);
-            command.Parameters.AddWithValue("@AccessFailedCount", user.AccessFailedCount);
-            command.Parameters.AddWithValue("@SecurityStamp", user.SecurityStamp ?? (object)DBNull.Value);
-            command.Parameters.AddWithValue("@ConcurrencyStamp", user.ConcurrencyStamp ?? (object)DBNull.Value);
-            command.Parameters.AddWithValue("@LockoutEnd", user.LockoutEnd ?? (object)DBNull.Value);
-            command.Parameters.AddWithValue("@UserId", Guid.Parse(user.Id));
+                using (var transaction = await connection.BeginTransactionAsync(cancellationToken))
+                {
+                    try
+                    {
+                        var command = new NpgsqlCommand(
+                            @"UPDATE aspnetusers 
+                            SET username = @UserName, passwordhash = @PasswordHash, normalizedusername = @NormalizedUserName,
+                            email = @Email, normalizedemail = @NormalizedEmail, emailconfirmed = @EmailConfirmed,
+                            phonenumber = @PhoneNumber, phonenumberconfirmed = @PhoneNumberConfirmed, twofactorenabled = @TwoFactorEnabled,
+                            lockoutenabled = @LockoutEnabled, accessfailedcount = @AccessFailedCount, securitystamp = @SecurityStamp,
+                            concurrencystamp = @ConcurrencyStamp, lockoutend = @LockoutEnd
+                            WHERE id = @UserId",
+                            connection, transaction);
 
-            await connection.OpenAsync(cancellationToken);
-            await command.ExecuteNonQueryAsync(cancellationToken);
+                        command.Parameters.AddWithValue("@UserName", user.UserName ?? (object)DBNull.Value);
+                        command.Parameters.AddWithValue("@PasswordHash", user.PasswordHash ?? (object)DBNull.Value);
+                        command.Parameters.AddWithValue("@NormalizedUserName", user.NormalizedUserName ?? (object)DBNull.Value);
+                        command.Parameters.AddWithValue("@Email", user.Email ?? (object)DBNull.Value);
+                        command.Parameters.AddWithValue("@NormalizedEmail", user.NormalizedEmail ?? (object)DBNull.Value);
+                        command.Parameters.AddWithValue("@EmailConfirmed", user.EmailConfirmed);
+                        command.Parameters.AddWithValue("@PhoneNumber", user.PhoneNumber ?? (object)DBNull.Value);
+                        command.Parameters.AddWithValue("@PhoneNumberConfirmed", user.PhoneNumberConfirmed);
+                        command.Parameters.AddWithValue("@TwoFactorEnabled", user.TwoFactorEnabled);
+                        command.Parameters.AddWithValue("@LockoutEnabled", user.LockoutEnabled);
+                        command.Parameters.AddWithValue("@AccessFailedCount", user.AccessFailedCount);
+                        command.Parameters.AddWithValue("@SecurityStamp", user.SecurityStamp ?? (object)DBNull.Value);
+                        command.Parameters.AddWithValue("@ConcurrencyStamp", user.ConcurrencyStamp ?? (object)DBNull.Value);
+                        command.Parameters.AddWithValue("@LockoutEnd", user.LockoutEnd ?? (object)DBNull.Value);
+                        command.Parameters.AddWithValue("@UserId", Guid.Parse(user.Id));
+
+                        await command.ExecuteNonQueryAsync(cancellationToken);
+
+                        var userProfile = user.Profile ?? new UserProfile { UserId = Guid.Parse(user.Id) };
+                        await _userProfileRepository.UpdateUserProfileAsync(userProfile, cancellationToken);
+
+                        await transaction.CommitAsync(cancellationToken);
+                    }
+                    catch (Exception ex)
+                    {
+                        await transaction.RollbackAsync(cancellationToken);
+                        Console.WriteLine($"Error updating user and profile: {ex.Message}");
+                        // TODO: Log error
+                        throw;
+                    }
+                }
+            }
+        }
+        catch (OperationCanceledException)
+        {
+            Console.WriteLine("Operation was canceled.");
+            throw;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error updating user: {ex.Message}");
+            // TODO: Log error
+            throw;
         }
     }
+
+
 
 
     #endregion
@@ -343,17 +495,31 @@ public class ApplicationUserRepository : IApplicationUserRepository
     {
         cancellationToken.ThrowIfCancellationRequested();
 
-        using (var connection = new NpgsqlConnection(_connectionString))
+        try
         {
-            var command = new NpgsqlCommand(
-                "SELECT passwordhash FROM aspnetusers WHERE id = @UserId", connection);
+            using (var connection = new NpgsqlConnection(_connectionString))
+            {
+                var command = new NpgsqlCommand(
+                    "SELECT passwordhash FROM aspnetusers WHERE id = @UserId", connection);
 
-            command.Parameters.AddWithValue("@UserId", Guid.Parse(user.Id));
+                command.Parameters.AddWithValue("@UserId", Guid.Parse(user.Id));
 
-            await connection.OpenAsync(cancellationToken);
-            var passwordHash = await command.ExecuteScalarAsync(cancellationToken);
+                await connection.OpenAsync(cancellationToken);
+                var passwordHash = await command.ExecuteScalarAsync(cancellationToken);
 
-            return passwordHash != null ? passwordHash.ToString() : string.Empty;
+                return passwordHash != null ? passwordHash.ToString() : string.Empty;
+            }
+        }
+        catch (OperationCanceledException)
+        {
+            Console.WriteLine("Operation was canceled.");
+            throw;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error retrieving password hash: {ex.Message}");
+            // TODO: Log error
+            throw;
         }
     }
 
@@ -361,20 +527,33 @@ public class ApplicationUserRepository : IApplicationUserRepository
     {
         cancellationToken.ThrowIfCancellationRequested();
 
-        using (var connection = new NpgsqlConnection(_connectionString))
+        try
         {
-            var command = new NpgsqlCommand(
-                "SELECT passwordhash FROM aspnetusers WHERE id = @UserId", connection);
+            using (var connection = new NpgsqlConnection(_connectionString))
+            {
+                var command = new NpgsqlCommand(
+                    "SELECT passwordhash FROM aspnetusers WHERE id = @UserId", connection);
 
-            command.Parameters.AddWithValue("@UserId", Guid.Parse(user.Id));
+                command.Parameters.AddWithValue("@UserId", Guid.Parse(user.Id));
 
-            await connection.OpenAsync(cancellationToken);
-            var passwordHash = await command.ExecuteScalarAsync(cancellationToken);
+                await connection.OpenAsync(cancellationToken);
+                var passwordHash = await command.ExecuteScalarAsync(cancellationToken);
 
-            return !string.IsNullOrEmpty(passwordHash?.ToString());
+                return !string.IsNullOrEmpty(passwordHash?.ToString());
+            }
+        }
+        catch (OperationCanceledException)
+        {
+            Console.WriteLine("Operation was canceled.");
+            throw;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error checking if user has a password: {ex.Message}");
+            // TODO: Log error
+            throw;
         }
     }
-
 
     #endregion
 
@@ -385,57 +564,87 @@ public class ApplicationUserRepository : IApplicationUserRepository
         cancellationToken.ThrowIfCancellationRequested();
         var roles = new List<string>();
 
-        using (var connection = new NpgsqlConnection(_connectionString))
+        try
         {
-            var command = new NpgsqlCommand(
-                @"SELECT r.name 
-                  FROM aspnetroles r
-                  INNER JOIN aspnetuserroles ur ON ur.roleid = r.id
-                  WHERE ur.userid = @UserId", connection);
-
-            command.Parameters.AddWithValue("@UserId", Guid.Parse(user.Id));
-
-            await connection.OpenAsync(cancellationToken);
-            using (var reader = await command.ExecuteReaderAsync(cancellationToken))
+            using (var connection = new NpgsqlConnection(_connectionString))
             {
-                while (await reader.ReadAsync(cancellationToken))
+                var command = new NpgsqlCommand(
+                    @"SELECT r.name 
+                      FROM aspnetroles r
+                      INNER JOIN aspnetuserroles ur ON ur.roleid = r.id
+                      WHERE ur.userid = @UserId", connection);
+
+                command.Parameters.AddWithValue("@UserId", Guid.Parse(user.Id));
+
+                await connection.OpenAsync(cancellationToken);
+                using (var reader = await command.ExecuteReaderAsync(cancellationToken))
                 {
-                    roles.Add(reader.GetString(reader.GetOrdinal("name")));
+                    while (await reader.ReadAsync(cancellationToken))
+                    {
+                        roles.Add(reader.GetString(reader.GetOrdinal("name")));
+                    }
                 }
             }
+        }
+        catch (OperationCanceledException)
+        {
+            Console.WriteLine("Operation was canceled.");
+            throw;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error retrieving roles for user: {ex.Message}");
+            // TODO: Log error
+            throw;
         }
 
         return roles;
     }
+
 
     public async Task<IList<ApplicationUser>> GetUsersInRoleAsync(string roleName, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
         var users = new List<ApplicationUser>();
 
-        using (var connection = new NpgsqlConnection(_connectionString))
+        try
         {
-            var command = new NpgsqlCommand(
-                @"SELECT u.id, u.username, u.email, u.normalizedusername, u.normalizedemail
-                  FROM aspnetusers u
-                  INNER JOIN aspnetuserroles ur ON ur.userid = u.id
-                  INNER JOIN aspnetroles r ON ur.roleid = r.id
-                  WHERE r.normalizedname = @RoleName", connection);
-
-            command.Parameters.AddWithValue("@RoleName", roleName.ToUpper());
-
-            await connection.OpenAsync(cancellationToken);
-            using (var reader = await command.ExecuteReaderAsync(cancellationToken))
+            using (var connection = new NpgsqlConnection(_connectionString))
             {
-                while (await reader.ReadAsync(cancellationToken))
+                var command = new NpgsqlCommand(
+                    @"SELECT u.id, u.username, u.email, u.normalizedusername, u.normalizedemail
+                      FROM aspnetusers u
+                      INNER JOIN aspnetuserroles ur ON ur.userid = u.id
+                      INNER JOIN aspnetroles r ON ur.roleid = r.id
+                      WHERE r.normalizedname = @RoleName", connection);
+
+                command.Parameters.AddWithValue("@RoleName", roleName.ToUpper());
+
+                await connection.OpenAsync(cancellationToken);
+                using (var reader = await command.ExecuteReaderAsync(cancellationToken))
                 {
-                    users.Add(MapToApplicationUser(reader));
+                    while (await reader.ReadAsync(cancellationToken))
+                    {
+                        users.Add(await MapToApplicationUser(reader, cancellationToken));
+                    }
                 }
             }
+        }
+        catch (OperationCanceledException)
+        {
+            Console.WriteLine("Operation was canceled.");
+            throw;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error retrieving users in role: {ex.Message}");
+            // TODO: Log error
+            throw;
         }
 
         return users;
     }
+
 
     public async Task<bool> IsInRoleAsync(ApplicationUser user, string roleName, CancellationToken cancellationToken)
     {
@@ -474,21 +683,34 @@ public class ApplicationUserRepository : IApplicationUserRepository
     {
         cancellationToken.ThrowIfCancellationRequested();
 
-        using (var connection = new NpgsqlConnection(_connectionString))
+        try
         {
-            var command = new NpgsqlCommand(
-                @"DELETE FROM aspnetuserroles 
-              WHERE userid = @UserId AND roleid = 
-              (SELECT id FROM aspnetroles WHERE normalizedname = @RoleName)", connection);
+            using (var connection = new NpgsqlConnection(_connectionString))
+            {
+                var command = new NpgsqlCommand(
+                    @"DELETE FROM aspnetuserroles 
+                      WHERE userid = @UserId AND roleid = 
+                      (SELECT id FROM aspnetroles WHERE normalizedname = @RoleName)", connection);
 
-            command.Parameters.AddWithValue("@UserId", Guid.Parse(user.Id));
-            command.Parameters.AddWithValue("@RoleName", roleName.ToUpper());
+                command.Parameters.AddWithValue("@UserId", Guid.Parse(user.Id));
+                command.Parameters.AddWithValue("@RoleName", roleName.ToUpper());
 
-            await connection.OpenAsync(cancellationToken);
-            await command.ExecuteNonQueryAsync(cancellationToken);
+                await connection.OpenAsync(cancellationToken);
+                await command.ExecuteNonQueryAsync(cancellationToken);
+            }
+        }
+        catch (OperationCanceledException)
+        {
+            Console.WriteLine("Operation was canceled.");
+            throw;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error removing user from role: {ex.Message}");
+            // TODO: Log error
+            throw;
         }
     }
-
 
     #endregion
 
@@ -497,40 +719,54 @@ public class ApplicationUserRepository : IApplicationUserRepository
         cancellationToken.ThrowIfCancellationRequested();
         var users = new List<ApplicationUser>();
 
-        using (var connection = new NpgsqlConnection(_connectionString))
+        try
         {
-            string query = @"
-            SELECT u.*
-            FROM AspNetUsers u
-            LEFT JOIN AspNetUserRoles ur ON u.id = ur.userid
-            LEFT JOIN AspNetRoles r ON ur.roleid = r.id
-            WHERE 1 = 1"
-                + (string.IsNullOrEmpty(keyword) ? "" : " AND u.username ILIKE '%' || @keyword || '%'")
-                + (string.IsNullOrEmpty(role) ? "" : " AND r.normalizedname = @role")
-                + " ORDER BY u.username LIMIT @range OFFSET @startIndex";
-
-            using (var command = new NpgsqlCommand(query, connection))
+            using (var connection = new NpgsqlConnection(_connectionString))
             {
-                if (!string.IsNullOrEmpty(keyword))
-                {
-                    command.Parameters.AddWithValue("@keyword", keyword);
-                }
-                if (!string.IsNullOrEmpty(role))
-                {
-                    command.Parameters.AddWithValue("@role", role.ToUpper());
-                }
-                command.Parameters.AddWithValue("@range", range);
-                command.Parameters.AddWithValue("@startIndex", startIndex);
+                string query = @"
+                    SELECT u.*
+                    FROM AspNetUsers u
+                    LEFT JOIN AspNetUserRoles ur ON u.id = ur.userid
+                    LEFT JOIN AspNetRoles r ON ur.roleid = r.id
+                    WHERE 1 = 1"
+                    + (string.IsNullOrEmpty(keyword) ? "" : " AND u.username ILIKE '%' || @keyword || '%'")
+                    + (string.IsNullOrEmpty(role) ? "" : " AND r.normalizedname = @role")
+                    + " ORDER BY u.username LIMIT @range OFFSET @startIndex";
 
-                await connection.OpenAsync(cancellationToken);
-                using (var reader = await command.ExecuteReaderAsync(cancellationToken))
+                using (var command = new NpgsqlCommand(query, connection))
                 {
-                    while (await reader.ReadAsync(cancellationToken))
+                    if (!string.IsNullOrEmpty(keyword))
                     {
-                        users.Add(MapToApplicationUser(reader));
+                        command.Parameters.AddWithValue("@keyword", keyword);
+                    }
+                    if (!string.IsNullOrEmpty(role))
+                    {
+                        command.Parameters.AddWithValue("@role", role.ToUpper());
+                    }
+                    command.Parameters.AddWithValue("@range", range);
+                    command.Parameters.AddWithValue("@startIndex", startIndex);
+
+                    await connection.OpenAsync(cancellationToken);
+                    using (var reader = await command.ExecuteReaderAsync(cancellationToken))
+                    {
+                        while (await reader.ReadAsync(cancellationToken))
+                        {
+                            users.Add(await MapToApplicationUser(reader, cancellationToken));
+                        }
                     }
                 }
             }
+        }
+        catch (OperationCanceledException)
+        {
+            Console.WriteLine("Operation was canceled.");
+            throw;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error searching users: {ex.Message}");
+            // TODO: Log error
+            throw;
         }
 
         return users;
@@ -541,79 +777,107 @@ public class ApplicationUserRepository : IApplicationUserRepository
         cancellationToken.ThrowIfCancellationRequested();
         int totalCount = 0;
 
-        using (var connection = new NpgsqlConnection(_connectionString))
+        try
         {
-            string query = @"
-            SELECT COUNT(*)
-            FROM AspNetUsers u
-            LEFT JOIN AspNetUserRoles ur ON u.id = ur.userid
-            LEFT JOIN AspNetRoles r ON ur.roleid = r.id
-            WHERE 1 = 1"
-                + (string.IsNullOrEmpty(keyword) ? "" : " AND u.username ILIKE '%' || @keyword || '%'")
-                + (string.IsNullOrEmpty(role) ? "" : " AND r.normalizedname = @role");
-
-            using (var command = new NpgsqlCommand(query, connection))
+            using (var connection = new NpgsqlConnection(_connectionString))
             {
-                if (!string.IsNullOrEmpty(keyword))
-                {
-                    command.Parameters.AddWithValue("@keyword", keyword);
-                }
-                if (!string.IsNullOrEmpty(role))
-                {
-                    command.Parameters.AddWithValue("@role", role.ToUpper());
-                }
+                string query = @"
+                    SELECT COUNT(*)
+                    FROM AspNetUsers u
+                    LEFT JOIN AspNetUserRoles ur ON u.id = ur.userid
+                    LEFT JOIN AspNetRoles r ON ur.roleid = r.id
+                    WHERE 1 = 1"
+                    + (string.IsNullOrEmpty(keyword) ? "" : " AND u.username ILIKE '%' || @keyword || '%'")
+                    + (string.IsNullOrEmpty(role) ? "" : " AND r.normalizedname = @role");
 
-                await connection.OpenAsync(cancellationToken);
-                totalCount = Convert.ToInt32(await command.ExecuteScalarAsync(cancellationToken));
+                using (var command = new NpgsqlCommand(query, connection))
+                {
+                    if (!string.IsNullOrEmpty(keyword))
+                    {
+                        command.Parameters.AddWithValue("@keyword", keyword);
+                    }
+                    if (!string.IsNullOrEmpty(role))
+                    {
+                        command.Parameters.AddWithValue("@role", role.ToUpper());
+                    }
+
+                    await connection.OpenAsync(cancellationToken);
+                    totalCount = Convert.ToInt32(await command.ExecuteScalarAsync(cancellationToken));
+                }
             }
+        }
+        catch (OperationCanceledException)
+        {
+            Console.WriteLine("Operation was canceled.");
+            throw;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error getting total user count: {ex.Message}");
+            // TODO: Log error
+            throw;
         }
 
         return totalCount;
     }
 
-
     public async Task<List<int>> GetDailyUserRegistrationsAsync(int daysBack, CancellationToken cancellationToken)
     {
         var dailyRegistrations = new List<int>();
 
-        using (var connection = new NpgsqlConnection(_connectionString))
+        try
         {
-            await connection.OpenAsync(cancellationToken);
-
-            string query = $@"
-            WITH date_series AS (
-                SELECT 
-                    CURRENT_DATE - INTERVAL '1 day' * generate_series(0, @DaysBack - 1) AS day
-            )
-            SELECT 
-                day, 
-                COALESCE(COUNT(up.userid), 0) AS registrations
-            FROM 
-                date_series d
-            LEFT JOIN 
-                userprofiles up ON d.day = up.createdat::date
-            LEFT JOIN 
-                aspnetusers u ON up.userid = u.id
-            GROUP BY 
-                day
-            ORDER BY 
-                day ASC";
-
-            using (var command = new NpgsqlCommand(query, connection))
+            using (var connection = new NpgsqlConnection(_connectionString))
             {
-                command.Parameters.AddWithValue("@DaysBack", daysBack);
+                await connection.OpenAsync(cancellationToken);
 
-                using (var reader = await command.ExecuteReaderAsync(cancellationToken))
+                string query = $@"
+                    WITH date_series AS (
+                        SELECT 
+                            CURRENT_DATE - INTERVAL '1 day' * generate_series(0, @DaysBack - 1) AS day
+                    )
+                    SELECT 
+                        day, 
+                        COALESCE(COUNT(up.userid), 0) AS registrations
+                    FROM 
+                        date_series d
+                    LEFT JOIN 
+                        userprofiles up ON d.day = up.createdat::date
+                    LEFT JOIN 
+                        aspnetusers u ON up.userid = u.id
+                    GROUP BY 
+                        day
+                    ORDER BY 
+                        day ASC";
+
+                using (var command = new NpgsqlCommand(query, connection))
                 {
-                    while (await reader.ReadAsync(cancellationToken))
+                    command.Parameters.AddWithValue("@DaysBack", daysBack);
+
+                    using (var reader = await command.ExecuteReaderAsync(cancellationToken))
                     {
-                        dailyRegistrations.Add(reader.GetInt32(1));
+                        while (await reader.ReadAsync(cancellationToken))
+                        {
+                            dailyRegistrations.Add(reader.GetInt32(1));
+                        }
                     }
                 }
             }
         }
+        catch (OperationCanceledException)
+        {
+            Console.WriteLine("Operation was canceled.");
+            throw;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error retrieving daily user registrations: {ex.Message}");
+            // TODO: Log error
+            throw;
+        }
 
         return dailyRegistrations;
     }
+
 
 }

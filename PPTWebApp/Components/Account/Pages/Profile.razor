@@ -1,10 +1,11 @@
 ﻿@page "/account/profile"
 @using Microsoft.AspNetCore.Identity
-@using PPTWebApp.Data;
+@using PPTWebApp.Data
 @using PPTWebApp.Data.Models
 @inject UserManager<ApplicationUser> UserManager
 @inject NavigationManager Navigation
 @inject AuthenticationStateProvider AuthenticationStateProvider
+@rendermode InteractiveServer
 
 <div class="account-profile-container">
     <h1>My Profile</h1>
@@ -19,15 +20,37 @@
     }
     else
     {
-        <EditForm Model="userProfile" OnValidSubmit="HandleValidSubmit">
+        <EditForm Model="userProfile" OnValidSubmit="HandleValidSubmit" FormName="userProfileForm">
+            <DataAnnotationsValidator />
+            <ValidationSummary />
+
             <div class="form-group">
                 <label for="email">Email (cannot be changed)</label>
                 <InputText id="email" class="form-control" @bind-Value="userProfile.Email" readonly />
             </div>
 
             <div class="form-group">
+                <label for="firstname">First Name</label>
+                <InputText id="firstname" class="form-control" @bind-Value="userProfile.FirstName" placeholder="Enter first name" />
+                <ValidationMessage For="() => userProfile.FirstName" />
+            </div>
+
+            <div class="form-group">
+                <label for="lastname">Last Name</label>
+                <InputText id="lastname" class="form-control" @bind-Value="userProfile.LastName" placeholder="Enter last name" />
+                <ValidationMessage For="() => userProfile.LastName" />
+            </div>
+
+            <div class="form-group">
+                <label for="telephone">Telephone</label>
+                <InputText id="telephone" class="form-control" @bind-Value="userProfile.Telephone" placeholder="Enter telephone" />
+                <ValidationMessage For="() => userProfile.Telephone" />
+            </div>
+
+            <div class="form-group">
                 <label for="password">Change Password</label>
                 <InputText id="password" class="form-control" @bind-Value="userProfile.Password" type="password" placeholder="Enter new password (optional)" />
+                <ValidationMessage For="() => userProfile.Password" />
             </div>
 
             <button type="submit" class="btn btn-primary">Save Changes</button>
@@ -38,7 +61,7 @@
 @code {
     private bool isLoading = true;
     private ApplicationUser? user;
-    private UserProfile userProfile = new UserProfile();
+    private UserProfileViewModel userProfile = new UserProfileViewModel();
 
     protected override async Task OnInitializedAsync()
     {
@@ -51,9 +74,12 @@
 
             if (user != null)
             {
-                userProfile = new UserProfile
+                userProfile = new UserProfileViewModel
                     {
-                        Email = user.Email
+                        Email = user.Email,
+                        FirstName = user.Profile?.FirstName,
+                        LastName = user.Profile?.LastName,
+                        Telephone = user.Profile?.Telephone
                     };
             }
         }
@@ -61,23 +87,53 @@
         isLoading = false;
     }
 
-    // Handle form submission
     private async Task HandleValidSubmit()
     {
-        if (!string.IsNullOrEmpty(userProfile.Password))
+        if (user == null)
         {
-            // TODO: Update the password logic
+            return;
         }
 
-        // TODO: Update other user profile info logic (e.g., name)
-        // ...
+        if (!string.IsNullOrEmpty(userProfile.Password))
+        {
+            var result = await UserManager.ChangePasswordAsync(user, "CurrentPasswordPlaceholder", userProfile.Password);
+            if (!result.Succeeded)
+            {
+                foreach (var error in result.Errors)
+                {
+                    Console.WriteLine($"Error updating password: {error.Description}");
+                }
+                return;
+            }
+        }
+
+        if (user.Profile != null)
+        {
+            //TODO: ensure first- and lastname if it turns out to be necessary?
+            user.Profile.FirstName = userProfile.FirstName ?? string.Empty;
+            user.Profile.LastName = userProfile.LastName ?? string.Empty;
+            user.Profile.Telephone = userProfile.Telephone;
+
+            var updateResult = await UserManager.UpdateAsync(user);
+            if (!updateResult.Succeeded)
+            {
+                foreach (var error in updateResult.Errors)
+                {
+                    Console.WriteLine($"Error updating profile: {error.Description}");
+                }
+                return;
+            }
+        }
 
         Navigation.NavigateTo("/account/profile", forceLoad: true);
     }
 
-    private class UserProfile
+    private class UserProfileViewModel
     {
         public string? Email { get; set; }
+        public string? FirstName { get; set; }
+        public string? LastName { get; set; }
+        public string? Telephone { get; set; }
         public string? Password { get; set; }
     }
 }

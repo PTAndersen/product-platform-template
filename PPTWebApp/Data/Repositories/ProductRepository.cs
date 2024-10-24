@@ -1,8 +1,6 @@
 ﻿using Npgsql;
 using PPTWebApp.Data.Models;
 using PPTWebApp.Data.Repositories.Interfaces;
-using System.Collections.Generic;
-using System.ComponentModel.Design;
 
 namespace PPTWebApp.Data.Repositories
 {
@@ -166,6 +164,7 @@ namespace PPTWebApp.Data.Repositories
                             command.Parameters.AddWithValue("@Imagecompromise", product.ImageCompromise);
 
                             await command.ExecuteNonQueryAsync(cancellationToken);
+                            
                         }
 
                         await transaction.CommitAsync(cancellationToken);
