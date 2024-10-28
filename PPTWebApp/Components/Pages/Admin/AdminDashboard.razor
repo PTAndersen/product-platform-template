@@ -15,53 +15,45 @@
 
 <div class="dashboard-scroll-container">
     <h1>Admin Panel</h1>
-
-    @if (isAdmin)
-    {
-        <div class="container-fluid">
-            <div class="row">
-                <div class="col-md-6">
-                    <div class="card">
-                        <div class="card-body">
-                            <h5 class="card-title">Daily Visitors</h5>
-                            <canvas id="dailyVisitorsChart"></canvas>
-                        </div>
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title">Daily Visitors</h5>
+                        <canvas id="dailyVisitorsChart"></canvas>
                     </div>
                 </div>
+            </div>
 
-                <div class="col-md-6">
-                    <div class="card">
-                        <div class="card-body">
-                            <h5 class="card-title">Sales Overview</h5>
-                            <canvas id="salesOverviewChart"></canvas>
-                        </div>
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title">Sales Overview</h5>
+                        <canvas id="salesOverviewChart"></canvas>
                     </div>
                 </div>
+            </div>
 
-                <div class="col-md-6">
-                    <div class="card">
-                        <div class="card-body">
-                            <h5 class="card-title">User Registrations</h5>
-                            <canvas id="userRegistrationsChart"></canvas>
-                        </div>
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title">User Registrations</h5>
+                        <canvas id="userRegistrationsChart"></canvas>
                     </div>
                 </div>
+            </div>
 
-                <div class="col-md-6">
-                    <div class="card">
-                        <div class="card-body">
-                            <h5 class="card-title">Top Selling Products</h5>
-                            <canvas id="topSellingProductsChart"></canvas>
-                        </div>
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title">Top Selling Products</h5>
+                        <canvas id="topSellingProductsChart"></canvas>
                     </div>
                 </div>
             </div>
         </div>
-    }
-    else
-    {
-        <p>You do not have access to this page.</p>
-    }
+    </div>
 </div>
 
 @code {
@@ -73,6 +65,18 @@
 
     protected override async Task OnInitializedAsync()
     {
+        if (await CheckIsAdmin())
+        {
+            isAdmin = true;   
+        }
+        else
+        {
+            Navigation.NavigateTo("/");
+        }
+    }
+
+    protected async Task<bool> CheckIsAdmin()
+    {
         var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
         var user = authState.User;
 
@@ -81,19 +85,17 @@
             var currentUser = await UserManager.GetUserAsync(user);
             if (currentUser != null && await UserManager.IsInRoleAsync(currentUser, "Admin"))
             {
-                isAdmin = true;
+                return true;
             }
         }
-
-        if (!isAdmin)
-        {
-            Navigation.NavigateTo("/");
-        }
+        return false;
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        if (firstRender && isAdmin)
+        Console.WriteLine("admin: " + (await CheckIsAdmin() ? "true" : "false"));
+        Console.WriteLine("firstrender: " + (firstRender ? "true" : "false"));
+        if (firstRender && await CheckIsAdmin())
         {
             await LoadDailyVisitorsAsync();
             await LoadDailySalesAsync();
