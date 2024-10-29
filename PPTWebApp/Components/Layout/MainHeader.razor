@@ -150,73 +150,6 @@
         BasketService.OnChange += StateHasChanged;
     }
 
-    protected override async Task OnAfterRenderAsync(bool firstRender)
-    {
-        if (firstRender)
-        {
-            NavigationManager.LocationChanged += async (sender, args) => await TrackActivityAndSessionAsync();
-            await TrackActivityAndSessionAsync();
-        }
-    }
-
-    private async Task TrackActivityAndSessionAsync()
-    {
-        await TrackVisitorSessionAsync();
-        await TrackUserActivityAsync();
-    }
-
-    private async Task TrackVisitorSessionAsync()
-    {
-        if (isAdmin)
-        {
-            return;
-        }
-
-        var sessionIdString = await JSRuntime.InvokeAsync<string>("localStorage.getItem", new object[] { "visitorSessionId" });
-        Guid? sessionId = null;
-
-        if (Guid.TryParse(sessionIdString, out var parsedSessionId))
-        {
-            sessionId = parsedSessionId;
-        }
-
-        var validSessionId = await VisitorSessionService.HandleSessionAsync(sessionId, CancellationToken.None);
-
-        await JSRuntime.InvokeAsync<object>("localStorage.setItem", new object[] { "visitorSessionId", validSessionId.ToString() });
-
-        var pageUrl = NavigationManager.Uri;
-        var referrer = await JSRuntime.InvokeAsync<string>("eval", "document.referrer");
-        await VisitorPageViewService.LogPageViewAsync(validSessionId, pageUrl, referrer, CancellationToken.None);
-    }
-
-
-    private async Task TrackUserActivityAsync()
-    {
-        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
-        var user = authState.User;
-
-        if (user.Identity?.IsAuthenticated == true)
-        {
-            var userIdClaim = user.FindFirst(c => c.Type == "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier");
-
-            if (userIdClaim != null && Guid.TryParse(userIdClaim.Value, out Guid userId))
-            {
-                var success = await UserActivityService.UpdateUserActivityAsync(userId, CancellationToken.None);
-
-                if (!success)
-                {
-                    await HandleFailedUserActivityUpdateAsync();
-                }
-            }
-        }
-    }
-
-    private async Task HandleFailedUserActivityUpdateAsync()
-    {
-        await JSRuntime.InvokeVoidAsync("localStorage.removeItem", "userSessionId");
-        NavigationManager.NavigateTo("/account/login");
-    }
-
     private void IncreaseQuantity(BasketItem item)
     {
         BasketService.AddToBasket(item.Product, 1);
@@ -241,7 +174,6 @@
 
     public void Dispose()
     {
-        NavigationManager.LocationChanged -= async (sender, args) => await TrackActivityAndSessionAsync();
         BasketService.OnChange -= StateHasChanged;
     }
 }

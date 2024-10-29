@@ -1,0 +1,52 @@
+﻿@page "/cookie-policy"
+@inject CookieConsentService CookieService
+@inject NavigationManager Navigation
+@rendermode InteractiveServer
+
+@code {
+    private async Task AllowOnlyNecessaryCookies()
+    {
+        await CookieService.SetUserConsentAsync(acceptAll: false);
+        Navigation.NavigateTo(Navigation.Uri, forceLoad: true);
+    }
+
+    private async Task AllowAllCookies()
+    {
+        await CookieService.SetUserConsentAsync(acceptAll: true);
+        Navigation.NavigateTo(Navigation.Uri, forceLoad: true);
+    }
+
+    private async Task ResetCookies()
+    {
+        await CookieService.ResetCookiesAsync();
+        Navigation.NavigateTo(Navigation.Uri, forceLoad: true);
+    }
+}
+<div class="cookie-policy-container">
+    <div class="cookie-policy">
+        <h2>Cookie Policy</h2>
+        <p>This website uses cookies to ensure you get the best experience. We use different types of cookies, which may include:</p>
+
+        <h3>Types of Cookies We Use</h3>
+        <ul>
+            <li>
+                <strong>Necessary Cookies</strong>: Essential for the website's basic functionality, such as page navigation and login sessions.
+            </li>
+            <li>
+                <strong>Functional Cookies</strong>: Enable additional functionality, such as remembering user preferences or allowing for easier navigation.
+            </li>
+            <li>
+                <strong>Analytical/Performance Cookies</strong>: Collect data on how users interact with the site, allowing us to improve the performance and user experience.
+            </li>
+            <li>
+                <strong>Tracking/Marketing Cookies</strong>: Track user behavior across websites to deliver targeted advertisements and measure ad campaign effectiveness.
+            </li>
+        </ul>
+
+        <div class="cookie-policy-buttons">
+            <button @onclick="AllowOnlyNecessaryCookies">Allow Only Necessary Cookies</button>
+            <button @onclick="AllowAllCookies">Allow All Cookies</button>
+            <button @onclick="ResetCookies">Reset Cookies</button>
+        </div>
+    </div>
+</div>

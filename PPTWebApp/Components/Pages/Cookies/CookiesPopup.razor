@@ -1,0 +1,141 @@
+﻿@using PPTWebApp.Data.Services
+@inject CookieConsentService CookieService
+@inject NavigationManager NavigationManager
+@inject VisitorSessionService VisitorSessionService
+@inject VisitorPageViewService VisitorPageViewService
+@inject UserActivityService UserActivityService
+@inject AuthenticationStateProvider AuthenticationStateProvider
+@inject IJSRuntime JSRuntime
+@rendermode InteractiveServer
+
+@if (IsVisible)
+{
+    <div class="cookie-popup">
+        <div class="cookie-content">
+            <p>This website uses cookies to improve your experience. Some are essential, while others help us understand usage.</p>
+            <button @onclick="AcceptAllCookies">Accept All Cookies</button>
+            <button @onclick="UseNecessaryCookies">Use Only Necessary Cookies</button>
+            <a href="/cookie-policy" target="_blank">Cookie Policy</a>
+        </div>
+    </div>
+}
+
+@code {
+    private bool IsVisible = false;
+    private bool hasRendered = false;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender && !hasRendered)
+        {
+            hasRendered = true;
+
+            var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+            var user = authState.User;
+
+            if (user.IsInRole("Admin"))
+            {
+                await UseNecessaryCookies();
+            }
+            else
+            {
+                IsVisible = !await CookieService.HasConsentAsync();
+                StateHasChanged();
+
+                if (await CookieService.IsTrackingAllowedAsync())
+                {
+                    await TrackActivityAndSessionAsync();
+                    NavigationManager.LocationChanged += OnLocationChanged;
+                }
+            }
+        }
+    }
+
+    private async Task AcceptAllCookies()
+    {
+        await CookieService.SetUserConsentAsync(acceptAll: true);
+        IsVisible = false;
+    }
+
+    private async Task UseNecessaryCookies()
+    {
+        await CookieService.SetUserConsentAsync(acceptAll: false);
+        IsVisible = false;
+    }
+
+    private async Task TrackActivityAndSessionAsync()
+    {
+        await TrackVisitorSessionAsync();
+        await TrackUserActivityAsync();
+    }
+
+    private async Task TrackVisitorSessionAsync()
+    {
+        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+        var isAdmin = user.IsInRole("Admin");
+
+        if (isAdmin)
+        {
+            return;
+        }
+
+        var sessionIdString = await JSRuntime.InvokeAsync<string>("localStorage.getItem", "visitorSessionId");
+        Guid? sessionId = null;
+
+        if (Guid.TryParse(sessionIdString, out var parsedSessionId))
+        {
+            sessionId = parsedSessionId;
+        }
+
+        var validSessionId = await VisitorSessionService.HandleSessionAsync(sessionId, CancellationToken.None);
+
+        await JSRuntime.InvokeAsync<object>("localStorage.setItem", "visitorSessionId", validSessionId.ToString());
+
+        var pageUrl = NavigationManager.Uri;
+        var referrer = await JSRuntime.InvokeAsync<string>("eval", "document.referrer");
+        await VisitorPageViewService.LogPageViewAsync(validSessionId, pageUrl, referrer, CancellationToken.None);
+    }
+
+    private async Task TrackUserActivityAsync()
+    {
+        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+
+        if (user.Identity?.IsAuthenticated == true)
+        {
+            var userIdClaim = user.FindFirst(c => c.Type == "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier");
+
+            if (userIdClaim != null && Guid.TryParse(userIdClaim.Value, out Guid userId))
+            {
+                var success = await UserActivityService.UpdateUserActivityAsync(userId, CancellationToken.None);
+
+                if (!success)
+                {
+                    await HandleFailedUserActivityUpdateAsync();
+                }
+            }
+        }
+    }
+
+    private async Task HandleFailedUserActivityUpdateAsync()
+    {
+        await JSRuntime.InvokeVoidAsync("localStorage.removeItem", "userSessionId");
+        NavigationManager.NavigateTo("/account/login");
+    }
+
+    private void OnLocationChanged(object? sender, LocationChangedEventArgs? args)
+    {
+        _ = OnLocationChangedAsync();
+    }
+
+    private async Task OnLocationChangedAsync()
+    {
+        await TrackActivityAndSessionAsync();
+    }
+
+    public void Dispose()
+    {
+        NavigationManager.LocationChanged -= OnLocationChanged;
+    }
+}

@@ -84,6 +84,8 @@ builder.Services.AddScoped<UserActivityService>();
 builder.Services.AddScoped<IOrderRepository>(provider => new OrderRepository(connectionString));
 builder.Services.AddScoped<OrderService>();
 
+builder.Services.AddScoped<CookieConsentService>();
+
 builder.WebHost.UseStaticWebAssets();
 
 builder.Services.AddScoped<AuthenticationStateProvider, IdentityRevalidatingAuthenticationStateProvider>();
