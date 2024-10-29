@@ -111,10 +111,9 @@
     {
         if (!isLoggedIn && string.IsNullOrEmpty(email))
         {
-            Console.WriteLine("Please provide an email address.");
             return;
         }
 
-        NavigationManager.NavigateTo("/payment");
+        NavigationManager.NavigateTo("/checkout/payment");
     }
 }
