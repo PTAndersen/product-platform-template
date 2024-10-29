@@ -1,10 +1,14 @@
-﻿.navbar {
-    background-color: #343a40;
+﻿.navbar-branded {
+    background-color: var(--navbar-brand-color, #343a40);
 }
 
-    .navbar .navbar-brand img {
-        height: 40px;
-    }
+.navbar {
+    
+}
+
+.navbar .navbar-brand img {
+    height: 60px;
+}
 
 .navbar-toggler {
     border: none;

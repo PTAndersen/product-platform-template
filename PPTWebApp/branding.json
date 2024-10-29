@@ -1,0 +1,19 @@
+{
+  "profiles": {
+    "default": {
+      "companyName": "Default Company",
+      "logoUrl": "https://via.placeholder.com/200x100?text=Default+Logo",
+      "themeColor": "#343a40"
+    },
+    "profile1": {
+      "companyName": "Profile 1 Company",
+      "logoUrl": "https://via.placeholder.com/200x100?text=Profile+1+Logo",
+      "themeColor": "#ff5733"
+    },
+    "profile2": {
+      "companyName": "Profile 2 Company",
+      "logoUrl": "https://via.placeholder.com/200x100?text=Profile+2+Logo",
+      "themeColor": "#33c4ff"
+    }
+  }
+}

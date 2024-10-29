@@ -11,6 +11,24 @@ using PPTWebApp.Data.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
+#region Branding
+builder.Configuration.AddJsonFile("branding.json", optional: true, reloadOnChange: true);
+
+string profileName = builder.Configuration["BrandingProfile"] ?? "default";
+
+var brandingSettings = builder.Configuration.GetSection("profiles").Get<Dictionary<string, BrandingSettings.ProfileSettings>>();
+
+if (brandingSettings != null && brandingSettings.TryGetValue(profileName, out var selectedProfile))
+{
+    builder.Services.AddSingleton(selectedProfile);
+}
+else
+{
+    throw new InvalidOperationException($"Profile '{profileName}' not found in branding.json.");
+}
+
+#endregion
+
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 if (string.IsNullOrWhiteSpace(connectionString))
 {

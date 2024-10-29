@@ -1,26 +1,25 @@
-﻿
-.query-bar .row {
-    align-items: center;
-}
-
-.query-bar {
-    background-color: #f8f8f8;
-    border-radius: 8px;
-    padding: 1rem;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-    margin-bottom: 2rem;
-}
-
-.product-grid-container {
+﻿.product-grid-container {
     display: flex;
     flex-direction: column;
     justify-content: space-between;
     height: calc(100vh - 60px); /* TODO: fix the hardcoded header space */
     width: 100%;
     margin: 0 auto;
-    padding: 2rem;
     overflow-y: auto;
     overflow-x: hidden;
+    padding: 2rem;
+}
+
+.query-bar .row {
+    align-items: center;
+}
+
+.query-bar {
+    background-color: #f2f2f2;
+    border-radius: 8px;
+    padding: 1rem;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    margin-bottom: 2rem;
 }
 
 .row {
