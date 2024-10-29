@@ -10,18 +10,11 @@
         <button class="btn btn-dark d-lg-none mb-3" type="button" data-bs-toggle="collapse" data-bs-target="#queryBar" aria-expanded="false" aria-controls="queryBar">
             Filters
         </button>
-        <div class="query-bar">
+        <div id="queryBar" class="query-bar collapse d-lg-block">
             <div class="row gx-3 justify-content-center">
                 <div class="col-md-3 mb-2">
                     <input type="text" placeholder="Search posts..." class="form-control"
                            @bind="SearchInput" @oninput="OnSearchInputChangeAsync" />
-                </div>
-
-                <div class="col-md-2 mb-2">
-                    <select class="form-select" @onchange="OnSortByChangeAsync">
-                        <option value="Newest First" selected="@(SortBy == "Newest First")">Newest First</option>
-                        <option value="Oldest First" selected="@(SortBy == "Oldest First")">Oldest First</option>
-                    </select>
                 </div>
             </div>
         </div>
@@ -53,7 +46,6 @@
 @code {
     private IEnumerable<Post> Posts { get; set; } = Enumerable.Empty<Post>();
     private string SearchInput = "";
-    private string SortBy = "Newest First";
     private int MaxPostsToDisplay = 8;
     private int PageIndex = 0;
     private int TotalPosts = 0;
@@ -107,13 +99,6 @@
     private async Task OnSearchInputChangeAsync(ChangeEventArgs e)
     {
         SearchInput = e.Value?.ToString() ?? string.Empty;
-        PageIndex = 0;
-        await LoadPostsAsync();
-    }
-
-    private async Task OnSortByChangeAsync(ChangeEventArgs e)
-    {
-        SortBy = e.Value?.ToString() ?? "Newest First";
         PageIndex = 0;
         await LoadPostsAsync();
     }
