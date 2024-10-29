@@ -10,15 +10,14 @@
     }
     else if (post != null)
     {
-        <div class="post-content" @onclick="HandleClick">
-            @((MarkupString)post.Content)
-        </div>
+        <iframe class="post-iframe" srcdoc="@post.Content" frameborder="0"></iframe>
     }
     else
     {
         <p>Unable to load post. Please check the URL and try again.</p>
     }
 </div>
+
 
 @code {
     [Parameter]

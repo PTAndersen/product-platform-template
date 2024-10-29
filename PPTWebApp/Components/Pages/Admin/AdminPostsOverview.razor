@@ -4,6 +4,7 @@
 @using PPTWebApp.Data
 @using PPTWebApp.Data.Models
 @using PPTWebApp.Data.Services
+@using System.Text.RegularExpressions
 @inject NavigationManager Navigation
 @inject UserManager<ApplicationUser> UserManager
 @inject AuthenticationStateProvider AuthenticationStateProvider
@@ -39,18 +40,9 @@
                     <input id="imageUrl" class="form-control" @bind="postModel.ImageUrl" placeholder="Enter image URL" required />
                 </div>
 
-
                 <div class="form-group">
-                    <label for="imageCompromise">Image Compromise</label>
-                    <select id="imageCompromise" class="form-control" @bind="postModel.ImageCompromise" required>
-                        <option value="vertical">Vertical</option>
-                        <option value="horizontal">Horizontal</option>
-                    </select>
-                </div>
-
-                <div class="form-group">
-                    <label for="postFile">Upload HTML File</label>
-                    <InputFile OnChange="HandleFileSelectedAsync" class="form-control" />
+                    <label for="postFile">Upload ZIP File</label>
+                    <InputFile OnChange="HandleZipSelectedAsync" class="form-control" accept=".zip" />
                 </div>
 
                 <button type="submit" class="btn btn-primary">Submit Post</button>
@@ -75,7 +67,7 @@
             DatePosted = DateTime.Now
         };
 
-    private string? htmlFileContent;
+    private IBrowserFile? zipFile;
 
     protected override async Task OnInitializedAsync()
     {
@@ -112,19 +104,9 @@
             };
     }
 
-    private async Task HandleFileSelectedAsync(InputFileChangeEventArgs e)
+    private void HandleZipSelectedAsync(InputFileChangeEventArgs e)
     {
-        var file = e.File;
-
-        if (file != null && file.ContentType == "text/html")
-        {
-            using var stream = new StreamReader(file.OpenReadStream());
-            htmlFileContent = await stream.ReadToEndAsync();
-        }
-        else
-        {
-            htmlFileContent = null;
-        }
+        zipFile = e.File;
     }
 
     private async Task HandleValidSubmitAsync()
@@ -137,13 +119,14 @@
 
         try
         {
-            if (htmlFileContent == null)
+            if (zipFile == null)
             {
-                Console.WriteLine("No HTML content provided for the post.");
+                Console.WriteLine("No ZIP file provided for the post.");
                 return;
             }
 
-            postModel.Content = htmlFileContent;
+            string htmlContent = await ExtractAndProcessZipAsync(zipFile);
+            postModel.Content = htmlContent;
             postModel.DatePosted = postModel.DatePosted == DateTime.MinValue ? DateTime.Now : postModel.DatePosted;
 
             await PostService.AddPostAsync(postModel, CancellationToken.None);
@@ -155,5 +138,52 @@
         {
             Console.WriteLine($"Error adding post: {ex.Message}");
         }
+    }
+
+    private async Task<string> ExtractAndProcessZipAsync(IBrowserFile zipFile)
+    {
+        using var memoryStream = new MemoryStream();
+        await zipFile.OpenReadStream().CopyToAsync(memoryStream);
+        memoryStream.Position = 0;
+
+        using var archive = new System.IO.Compression.ZipArchive(memoryStream, System.IO.Compression.ZipArchiveMode.Read);
+
+        string htmlContent = string.Empty;
+        Dictionary<string, string> base64Images = new Dictionary<string, string>();
+
+        foreach (var entry in archive.Entries)
+        {
+            if (entry.FullName.EndsWith(".jpg", StringComparison.OrdinalIgnoreCase) ||
+                entry.FullName.EndsWith(".png", StringComparison.OrdinalIgnoreCase) ||
+                entry.FullName.EndsWith(".gif", StringComparison.OrdinalIgnoreCase))
+            {
+                using var imageStream = entry.Open();
+                using var imageMemoryStream = new MemoryStream();
+                await imageStream.CopyToAsync(imageMemoryStream);
+                var base64String = Convert.ToBase64String(imageMemoryStream.ToArray());
+                var mimeType = entry.FullName.EndsWith(".png", StringComparison.OrdinalIgnoreCase) ? "image/png" :
+                               entry.FullName.EndsWith(".gif", StringComparison.OrdinalIgnoreCase) ? "image/gif" : "image/jpeg";
+                base64Images[entry.FullName] = $"data:{mimeType};base64,{base64String}";
+            }
+        }
+
+        foreach (var entry in archive.Entries)
+        {
+            if (entry.FullName.EndsWith(".html", StringComparison.OrdinalIgnoreCase))
+            {
+                using var htmlStream = entry.Open();
+                using var reader = new StreamReader(htmlStream);
+                htmlContent = await reader.ReadToEndAsync();
+
+                foreach (var imagePath in base64Images.Keys)
+                {
+                    var imageTag = $"src=\"{imagePath}\"";
+                    var base64Data = base64Images[imagePath];
+                    htmlContent = htmlContent.Replace(imageTag, $"src=\"{base64Data}\"");
+                }
+            }
+        }
+
+        return htmlContent;
     }
 }
