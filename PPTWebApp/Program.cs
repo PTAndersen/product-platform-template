@@ -1,3 +1,4 @@
+using DotNetEnv;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Identity;
@@ -10,6 +11,8 @@ using PPTWebApp.Data.Repositories.Interfaces;
 using PPTWebApp.Data.Services;
 
 var builder = WebApplication.CreateBuilder(args);
+
+Env.Load();
 
 #region Branding
 builder.Configuration.AddJsonFile("branding.json", optional: true, reloadOnChange: true);
@@ -29,7 +32,10 @@ else
 
 #endregion
 
-var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+var connectionString = Environment.GetEnvironmentVariable("DATABASE_URL"); // used to be: builder.Configuration.GetConnectionString("DefaultConnection");
+
+Console.WriteLine("DATABASE_URL from Environment: " + connectionString);
+
 if (string.IsNullOrWhiteSpace(connectionString))
 {
     throw new InvalidOperationException("Connection string 'DefaultConnection' is either missing or empty.");
