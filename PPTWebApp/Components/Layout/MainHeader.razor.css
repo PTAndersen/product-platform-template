@@ -18,6 +18,15 @@
     color: white;
 }
 
+.navbar-nav {
+    display: flex;
+    align-items: center;
+}
+
+.navbar-nav .nav-item {
+    margin-right: 20px;
+}
+
 .navbar .nav-item .badge {
     position: absolute;
     top: -5px;

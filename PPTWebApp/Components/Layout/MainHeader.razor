@@ -95,7 +95,7 @@
                 {
                     <li class="nav-item dropdown">
                         <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                            @userName (@email)
+                            <i class="bi bi-person-circle" style="font-size: 1.5rem;"></i>
                         </a>
                         <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarDropdown">
                             <li><a class="dropdown-item" href="/account/profile">Profile</a></li>
@@ -118,7 +118,6 @@
 @code {
     private bool isLoggedIn = false;
     private bool isAdmin = false;
-    private string userName = "";
     private string email = "";
 
     protected override async Task OnInitializedAsync()
@@ -133,13 +132,11 @@
             var currentUser = await UserManager.GetUserAsync(user);
             if (currentUser != null)
             {
-                userName = currentUser.UserName ?? "Unknown User";
                 email = currentUser.Email ?? "No Email";
                 isAdmin = await UserManager.IsInRoleAsync(currentUser, "Admin");
             }
             else
             {
-                userName = "Unknown User";
                 email = "Not able to get user";
                 isAdmin = false;
             }
