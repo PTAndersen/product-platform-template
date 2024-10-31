@@ -41,8 +41,8 @@ namespace PPTWebApp.Data.Repositories
                     string query = @"
                         SELECT *
                         FROM posts"
-                                + (string.IsNullOrEmpty(keyword) ? "" : " WHERE title ILIKE '%' || @Keyword || '%'") +
-                                @" ORDER BY id 
+                        + (string.IsNullOrEmpty(keyword) ? "" : " WHERE title ILIKE '%' || @Keyword || '%'") +
+                        @" ORDER BY dateposted DESC 
                         OFFSET @StartIndex LIMIT @Range";
 
                     using (var command = new NpgsqlCommand(query, connection))
