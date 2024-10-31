@@ -1,21 +1,21 @@
 .page {
-    position: relative;
-    display: flex;
-    flex-direction: column;
-    min-height: 100vh;
+    display: grid;
+    grid-template-rows: auto 1fr auto;
+    height: 100vh;
 }
+
+
+header, footer {
+    align-self: start;
+}
+
 
 main {
-    flex: 1;
+    overflow-y: auto;
     background-color: #f8f9fa;
+    max-height: 100%;
 }
 
-footer {
-    padding: 20px;
-    background-color: #343a40;
-    color: white;
-    text-align: center;
-}
 
 @media (max-width: 640px) {
     .navbar-nav .nav-link {

@@ -1,13 +1,25 @@
 ﻿.navbar-branded {
     background-color: var(--navbar-brand-color, #343a40);
+    margin: 0px;
 }
 
 .navbar {
-    
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    width: 100%;
+    margin: 0px;
 }
 
 .navbar .navbar-brand img {
-    height: 60px;
+    max-height: 60px;
+}
+
+.navbar-nav {
+    display: flex;
+    align-items: center;
 }
 
 .navbar-toggler {
@@ -16,11 +28,6 @@
 
 .navbar-toggler-icon {
     color: white;
-}
-
-.navbar-nav {
-    display: flex;
-    align-items: center;
 }
 
 .navbar-nav .nav-item {

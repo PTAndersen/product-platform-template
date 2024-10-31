@@ -1,6 +1,6 @@
 ﻿.cookie-policy-container {
     overflow-y: scroll;
-    height: calc(100vh - 60px); /* TODO: fix the hardcoded header space */
+    height: 100%;
 }
 
 .cookie-policy {

@@ -1,5 +1,5 @@
 ﻿.frontpage-overview-scroll-container {
-    height: calc(100vh - 60px); /* TODO: fix the hardcoded header space */
+    height: 100%;
     overflow-y: auto;
     padding: 1.5rem;
     margin: 0;

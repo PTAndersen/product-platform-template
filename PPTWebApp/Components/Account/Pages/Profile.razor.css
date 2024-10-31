@@ -1,5 +1,5 @@
 ﻿.account-profile-container {
-    height: calc(100vh - 60px); /* TODO: fix the hardcoded header space */
+    height: 100%;
     max-width: 600px;
     margin: 0 auto;
     padding: 20px;

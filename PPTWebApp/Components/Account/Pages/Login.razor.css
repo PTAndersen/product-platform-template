@@ -1,6 +1,6 @@
 ﻿
 .login-container {
-    height: calc(100vh - 60px); /* TODO: fix the hardcoded header space */
+    height: 100%;
 }
 
 .login-form, .external-login-container {
