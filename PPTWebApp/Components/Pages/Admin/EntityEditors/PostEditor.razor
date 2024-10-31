@@ -1,4 +1,6 @@
 ﻿@page "/admin/edit/posts/{id:int}"
+@attribute [Authorize(Roles = "Admin")]
+@using Microsoft.AspNetCore.Authorization
 @using PPTWebApp.Data.Models
 @using PPTWebApp.Data.Services
 @inject PostService PostService

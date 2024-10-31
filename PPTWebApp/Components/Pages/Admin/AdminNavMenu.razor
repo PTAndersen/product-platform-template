@@ -1,9 +1,16 @@
-﻿@using PPTWebApp.Components.Pages.Admin
+﻿@attribute [Authorize(Roles = "Admin")]
+@using Microsoft.AspNetCore.Authorization
+@using PPTWebApp.Components.Pages.Admin
 @rendermode InteractiveServer
 
 @code {
     [Parameter] public EventCallback<Type> OnMenuSelection { get; set; }
     private Type? activeComponent;
+
+    protected override void OnInitialized()
+    {
+        MenuSelected(typeof(AdminDashboard));
+    }
 
     private void MenuSelected(Type componentType)
     {

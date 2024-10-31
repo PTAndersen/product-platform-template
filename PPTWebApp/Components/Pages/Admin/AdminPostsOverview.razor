@@ -1,4 +1,6 @@
 ﻿@page "/admin/posts-overview"
+@attribute [Authorize(Roles = "Admin")]
+@using Microsoft.AspNetCore.Authorization
 @using Microsoft.AspNetCore.Identity
 @using PPTWebApp.Components.Layout
 @using PPTWebApp.Data
