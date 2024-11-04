@@ -1,0 +1,42 @@
+﻿@using Microsoft.AspNetCore.Components.Forms
+@using PPTWebApp.Data.Models
+@rendermode InteractiveServer
+
+<EditForm Model="DiscountData" OnValidSubmit="HandleValidSubmit">
+    <div class="form-group">
+        <label for="name">Discount Name</label>
+        <InputText id="name" class="form-control" @bind-Value="DiscountData.Name" />
+        <ValidationMessage For="@(() => DiscountData.Name)" />
+    </div>
+
+    <div class="form-group">
+        <label for="description">Description</label>
+        <InputTextArea id="description" class="form-control" @bind-Value="DiscountData.Description" />
+        <ValidationMessage For="@(() => DiscountData.Description)" />
+    </div>
+
+    <div class="form-group">
+        <label for="percent">Discount Percent</label>
+        <InputNumber id="percent" class="form-control" @bind-Value="DiscountData.DiscountPercent" />
+        <ValidationMessage For="@(() => DiscountData.DiscountPercent)" />
+    </div>
+
+    <div class="form-group">
+        <label for="isActive">Is Active</label>
+        <InputCheckbox id="isActive" @bind-Value="DiscountData.IsActive" />
+    </div>
+
+    <button type="submit" class="btn btn-primary">Save Changes</button>
+</EditForm>
+
+@code {
+    [Parameter] public Discount DiscountData { get; set; } = new Discount { Name = "", Description = "" };
+    [Parameter] public EventCallback<Discount> OnSave { get; set; }
+
+    private async Task HandleValidSubmit()
+    {
+        // TODO: Any additional form-specific logic (like validation feedback)
+
+        await OnSave.InvokeAsync(DiscountData);
+    }
+}

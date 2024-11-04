@@ -90,8 +90,6 @@
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        Console.WriteLine("admin: " + (await CheckIsAdmin() ? "true" : "false"));
-        Console.WriteLine("firstrender: " + (firstRender ? "true" : "false"));
         if (firstRender && await CheckIsAdmin())
         {
             await LoadDailyVisitorsAsync();

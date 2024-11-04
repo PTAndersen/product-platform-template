@@ -1,0 +1,72 @@
+﻿@using Microsoft.AspNetCore.Components.Forms
+@using PPTWebApp.Data.Models
+
+<EditForm Model="PostData" OnValidSubmit="HandleValidSubmit">
+    <div class="form-group">
+        <label for="title">Post Title</label>
+        <InputText id="title" class="form-control" @bind-Value="PostData.Title" />
+        <ValidationMessage For="@(() => PostData.Title)" />
+    </div>
+
+    <div class="form-group">
+        <label for="author">Author</label>
+        <InputText id="author" class="form-control" @bind-Value="PostData.Author" />
+        <ValidationMessage For="@(() => PostData.Author)" />
+    </div>
+
+    <div class="form-group">
+        <label for="datePosted">Date Posted</label>
+        <InputDate id="datePosted" class="form-control" @bind-Value="PostData.DatePosted" readonly />
+    </div>
+
+    <div class="form-group">
+        <label for="imageurl">Image URL</label>
+        <InputText id="imageurl" class="form-control" @bind-Value="PostData.ImageUrl" />
+        <ValidationMessage For="@(() => PostData.ImageUrl)" />
+    </div>
+
+    <div class="form-group">
+        <label for="imagecompromise">Image Compromise</label>
+        <InputSelect id="imagecompromise" class="form-control" @bind-Value="PostData.ImageCompromise">
+            <option value="horizontal">Horizontal</option>
+            <option value="vertical">Vertical</option>
+            <option value="auto">Auto</option>
+            <option value="never">Never</option>
+        </InputSelect>
+    </div>
+
+    <div class="form-group">
+        <label for="contentUpload">Upload New HTML Content</label>
+        <InputFile OnChange="HandleFileSelected" />
+    </div>
+
+    <button type="submit" class="btn btn-primary">Save Changes</button>
+</EditForm>
+
+@code {
+    [Parameter] public Post PostData { get; set; } = new Post()
+    {
+        Title = "",
+        Content = "",
+        ImageUrl = "",
+        ImageCompromise = ""
+    };
+    [Parameter] public EventCallback OnSave { get; set; }
+    [Parameter] public EventCallback<IBrowserFile> OnFileUpload { get; set; }
+
+    private async Task HandleValidSubmit()
+    {
+        // TODO: Any additional form-specific logic (like validation feedback)
+
+        await OnSave.InvokeAsync(PostData);
+    }
+
+    private async Task HandleFileSelected(InputFileChangeEventArgs e)
+    {
+        var file = e.File;
+        if (file != null)
+        {
+            await OnFileUpload.InvokeAsync(file);
+        }
+    }
+}

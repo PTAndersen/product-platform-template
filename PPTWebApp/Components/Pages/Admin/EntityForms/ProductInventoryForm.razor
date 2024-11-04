@@ -1,0 +1,24 @@
+﻿@using Microsoft.AspNetCore.Components.Forms
+@using PPTWebApp.Data.Models
+
+<EditForm Model="InventoryData" OnValidSubmit="HandleValidSubmit">
+    <div class="form-group">
+        <label for="quantity">Quantity</label>
+        <InputNumber id="quantity" class="form-control" @bind-Value="InventoryData.Quantity" />
+        <ValidationMessage For="@(() => InventoryData.Quantity)" />
+    </div>
+
+    <button type="submit" class="btn btn-primary">Save Changes</button>
+</EditForm>
+
+@code {
+    [Parameter] public ProductInventory InventoryData { get; set; } = new ProductInventory();
+    [Parameter] public EventCallback OnSave { get; set; }
+
+    private async Task HandleValidSubmit()
+    {
+        // TODO: Any additional form-specific logic (like validation feedback)
+
+        await OnSave.InvokeAsync(InventoryData);
+    }
+}

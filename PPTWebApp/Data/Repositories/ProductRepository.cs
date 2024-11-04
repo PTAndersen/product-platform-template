@@ -129,23 +129,58 @@ namespace PPTWebApp.Data.Repositories
             {
                 await connection.OpenAsync(cancellationToken);
 
+                //TODO: handle transaction correctly by passing it along to other repos
                 using (var transaction = await connection.BeginTransactionAsync(cancellationToken))
                 {
                     try
                     {
                         int? categoryId = null;
                         int? inventoryId = null;
+                        int? discountId = null;
 
+                        //TODO: ID is unlikely to ever be 0, but since there is a chance, better check could be done, goes for all entities
                         if (product.ProductCategory != null)
                         {
                             var productCategoryRepo = new ProductCategoryRepository(_connectionString);
                             categoryId = await productCategoryRepo.AddProductCategoryAsync(product.ProductCategory, cancellationToken);
+                            if (product.ProductCategory.Id == 0)
+                            {
+                                categoryId = await productCategoryRepo.AddProductCategoryAsync(product.ProductCategory, cancellationToken);
+                            }
+                            else
+                            {
+                                await productCategoryRepo.UpdateProductCategoryAsync(product.ProductCategory, cancellationToken);
+                                categoryId = product.ProductCategory.Id;
+                            }
                         }
 
                         if (product.ProductInventory != null)
                         {
                             var productInventoryRepo = new ProductInventoryRepository(_connectionString);
-                            inventoryId = await productInventoryRepo.AddProductInventoryAsync(product.ProductInventory, cancellationToken);
+
+                            if (product.ProductInventory.Id == 0)
+                            {
+                                inventoryId = await productInventoryRepo.AddProductInventoryAsync(product.ProductInventory, cancellationToken);
+                            }
+                            else
+                            {
+                                await productInventoryRepo.UpdateProductInventoryAsync(product.ProductInventory, cancellationToken);
+                                inventoryId = product.ProductInventory.Id;
+                            }
+                        }
+
+                        if (product.Discount != null)
+                        {
+                            var discountRepo = new DiscountRepository(_connectionString);
+                            if (product.Discount.Id == 0)
+                            {
+                                discountId = await discountRepo.AddDiscountAsync(product.Discount, cancellationToken);
+                            }
+                            else
+                            {
+                                await discountRepo.UpdateDiscountAsync(product.Discount, cancellationToken);
+                                discountId = product.Discount.Id;
+                            }
                         }
 
                         using (var command = new NpgsqlCommand(
@@ -196,25 +231,79 @@ namespace PPTWebApp.Data.Repositories
             {
                 await connection.OpenAsync(cancellationToken);
 
-                using (var command = new NpgsqlCommand(
-                    "UPDATE products SET name = @name, description = @description, price = @price, imageurl = @imageurl, imagecompromise = @imagecompromise WHERE id = @id", connection))
+                using (var transaction = await connection.BeginTransactionAsync(cancellationToken))
                 {
-                    command.Parameters.AddWithValue("@id", product.Id);
-                    command.Parameters.AddWithValue("@name", product.Name);
-                    command.Parameters.AddWithValue("@description", (object)product.Description ?? DBNull.Value);
-                    command.Parameters.AddWithValue("@price", product.Price);
-                    command.Parameters.AddWithValue("@imageurl", product.ImageUrl);
-                    command.Parameters.AddWithValue("@imagecompromise", product.ImageCompromise);
-
                     try
                     {
-                        await command.ExecuteNonQueryAsync(cancellationToken);
-                    }
-                    catch (OperationCanceledException)
-                    {
-                        Console.WriteLine("Operation was canceled.");
-                        //TODO: Log error
-                        throw;
+                        int? categoryId = null;
+                        int? inventoryId = null;
+                        int? discountId = null;
+
+                        //TODO: ID is unlikely to ever be 0, but since there is a chance, better check could be done, goes for all entities
+                        if (product.ProductCategory != null)
+                        {
+                            var productCategoryRepo = new ProductCategoryRepository(_connectionString);
+                            categoryId = await productCategoryRepo.AddProductCategoryAsync(product.ProductCategory, cancellationToken);
+                            if (product.ProductCategory.Id == 0)
+                            {
+                                categoryId = await productCategoryRepo.AddProductCategoryAsync(product.ProductCategory, cancellationToken);
+                            }
+                            else
+                            {
+                                await productCategoryRepo.UpdateProductCategoryAsync(product.ProductCategory, cancellationToken);
+                                categoryId = product.ProductCategory.Id;
+                            }
+                        }
+
+                        if (product.ProductInventory != null)
+                        {
+                            var productInventoryRepo = new ProductInventoryRepository(_connectionString);
+                            
+                            if (product.ProductInventory.Id == 0)
+                            {
+                                inventoryId = await productInventoryRepo.AddProductInventoryAsync(product.ProductInventory, cancellationToken);
+                            }
+                            else
+                            {
+                                await productInventoryRepo.UpdateProductInventoryAsync(product.ProductInventory, cancellationToken);
+                                inventoryId = product.ProductInventory.Id;
+                            }
+                        }
+
+                        if (product.Discount != null)
+                        {
+                            var discountRepo = new DiscountRepository(_connectionString);
+                            if(product.Discount.Id == 0)
+                            {
+                                discountId = await discountRepo.AddDiscountAsync(product.Discount, cancellationToken);
+                            }
+                            else
+                            {
+                                await discountRepo.UpdateDiscountAsync(product.Discount, cancellationToken);
+                                discountId = product.Discount.Id;
+                            }
+                        }
+
+                        using (var command = new NpgsqlCommand(
+                            "UPDATE products SET name = @name, description = @description, price = @price, imageurl = @imageurl, " +
+                            "imagecompromise = @imagecompromise, categoryid = @categoryId, inventoryid = @inventoryId, discountid = @discountId " +
+                            "WHERE id = @id", connection, transaction))
+                        {
+                            command.Parameters.AddWithValue("@id", product.Id);
+                            command.Parameters.AddWithValue("@name", product.Name);
+                            command.Parameters.AddWithValue("@description", (object)product.Description ?? DBNull.Value);
+                            command.Parameters.AddWithValue("@price", product.Price);
+                            command.Parameters.AddWithValue("@imageurl", product.ImageUrl);
+                            command.Parameters.AddWithValue("@imagecompromise", product.ImageCompromise);
+
+                            command.Parameters.AddWithValue("@categoryId", categoryId.HasValue ? categoryId.Value : DBNull.Value);
+                            command.Parameters.AddWithValue("@inventoryId", inventoryId.HasValue ? inventoryId.Value : DBNull.Value);
+                            command.Parameters.AddWithValue("@discountId", discountId.HasValue ? discountId.Value : DBNull.Value);
+
+                            await command.ExecuteNonQueryAsync(cancellationToken);
+                        }
+
+                        await transaction.CommitAsync(cancellationToken);
                     }
                     catch (Exception ex)
                     {

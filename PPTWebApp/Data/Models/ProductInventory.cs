@@ -2,7 +2,7 @@
 {
     public class ProductInventory
     {
-        public required int Id { get; set; }
-        public required int Quantity { get; set; }
+        public int Id { get; set; }
+        public int Quantity { get; set; }
     }
 }

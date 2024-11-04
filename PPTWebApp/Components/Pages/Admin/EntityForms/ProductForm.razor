@@ -1,0 +1,135 @@
+﻿@using Microsoft.AspNetCore.Components.Forms
+@using PPTWebApp.Data.Models
+@inject NavigationManager NavigationManager
+@rendermode InteractiveAuto
+
+@if (ProductData != null)
+{
+    <EditForm Model="ProductData" OnValidSubmit="HandleValidSubmit">
+        <div class="form-container">
+            <div class="form-group">
+                <label for="name">Product Name</label>
+                <InputText id="name" class="form-control" @bind-Value="ProductData.Name" />
+            </div>
+
+            <div class="form-group">
+                <label for="description">Description</label>
+                <InputTextArea id="description" class="form-control" @bind-Value="ProductData.Description" />
+            </div>
+
+            <div class="form-group">
+                <label for="price">Price</label>
+                <InputNumber id="price" class="form-control" @bind-Value="ProductData.Price" />
+            </div>
+
+            <div class="form-group">
+                <label for="sku">SKU</label>
+                <InputText id="sku" class="form-control" @bind-Value="ProductData.SKU" />
+            </div>
+
+            <div class="form-group">
+                <label for="imageurl">Image URL</label>
+                <InputText id="imageurl" class="form-control" @bind-Value="ProductData.ImageUrl" />
+            </div>
+
+            <div class="form-group">
+                <label for="imagecompromise">Image Compromise</label>
+                <InputSelect id="imagecompromise" class="form-control" @bind-Value="ProductData.ImageCompromise">
+                    <option value="horizontal">Horizontal</option>
+                    <option value="vertical">Vertical</option>
+                    <option value="auto">Auto</option>
+                    <option value="never">Never</option>
+                </InputSelect>
+            </div>
+
+            <div class="form-group">
+                <input type="checkbox" id="toggleDiscount" @onclick="ToggleDiscountForm" checked="@showDiscountForm" />
+                <label for="toggleDiscount">Add Discount</label>
+
+                @if (showDiscountForm && ProductData.Discount != null)
+                {
+                    <DiscountForm DiscountData="ProductData.Discount" />
+                }
+            </div>
+
+            <div class="form-group">
+                <input type="checkbox" id="toggleCategory" @onclick="ToggleCategoryForm" checked="@showCategoryForm" />
+                <label for="toggleCategory">Add Category</label>
+
+                @if (showCategoryForm && ProductData.ProductCategory != null)
+                {
+                    <ProductCategoryForm CategoryData="ProductData.ProductCategory" />
+                }
+            </div>
+
+            <div class="form-group">
+                <input type="checkbox" id="toggleInventory" @onclick="ToggleInventoryForm" checked="@showInventoryForm" />
+                <label for="toggleInventory">Add Inventory</label>
+
+                @if (showInventoryForm && ProductData.ProductInventory != null)
+                {
+                    <ProductInventoryForm InventoryData="ProductData.ProductInventory" />
+                }
+            </div>
+
+            <div class="button-group">
+                <button type="submit" class="btn btn-primary">Save Changes</button>
+                <button type="button" class="btn btn-secondary" @onclick="ResetChanges">Reset Changes</button>
+            </div>
+        </div>
+    </EditForm>
+}
+else
+{
+    <div>Loading...</div>
+}
+
+@code {
+    [Parameter] public Product ProductData { get; set; }
+    [Parameter] public EventCallback OnSave { get; set; }
+
+    private bool showDiscountForm { get; set; }
+    private bool showCategoryForm { get; set; }
+    private bool showInventoryForm { get; set; }
+
+    private async Task HandleValidSubmit()
+    {
+        // TODO: Any additional form-specific logic (like validation feedback)
+
+        await OnSave.InvokeAsync(ProductData);
+    }
+
+    protected override void OnInitialized()
+    {
+        ProductData ??= new Product { Name = "", Description = "", SKU = "", ImageUrl = "", ImageCompromise = "" };
+        showDiscountForm = ProductData.Discount != null;
+        showCategoryForm = ProductData.ProductCategory != null;
+        showInventoryForm = ProductData.ProductInventory != null;
+    }
+
+    private void ToggleDiscountForm()
+    {
+        showDiscountForm = !showDiscountForm;
+        ProductData.Discount = showDiscountForm ? ProductData.Discount ?? new Discount { Name = "", Description = "" } : null;
+        StateHasChanged();
+    }
+
+    private void ToggleCategoryForm()
+    {
+        showCategoryForm = !showCategoryForm;
+        ProductData.ProductCategory = showCategoryForm ? ProductData.ProductCategory ?? new ProductCategory { Name = "", Description = "" } : null;
+        StateHasChanged();
+    }
+
+    private void ToggleInventoryForm()
+    {
+        showInventoryForm = !showInventoryForm;
+        ProductData.ProductInventory = showInventoryForm ? ProductData.ProductInventory ?? new ProductInventory { Quantity = 0 } : null;
+        StateHasChanged();
+    }
+
+    private void ResetChanges()
+    {
+        NavigationManager.NavigateTo(NavigationManager.Uri, forceLoad: true);
+    }
+}

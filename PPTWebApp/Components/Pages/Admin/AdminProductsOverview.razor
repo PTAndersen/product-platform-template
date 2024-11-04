@@ -1,0 +1,40 @@
+﻿@page "/admin/products-overview"
+@inject NavigationManager NavigationManager
+@attribute [Authorize(Roles = "Admin")]
+@using Microsoft.AspNetCore.Authorization
+
+<div class="admin-overview-container"> 
+    <h3>Admin Products Overview</h3>
+
+    <div class="entity-selector">
+        <label for="entitySelect">Create New:</label>
+        <select id="entitySelect" @bind="SelectedEntity">
+            <option value="">-- Select Entity --</option>
+            <option value="product">Product</option>
+            <option value="category">Category</option>
+            <option value="inventory">Inventory</option>
+            <option value="discount">Discount</option>
+        </select>
+    </div>
+</div>
+@code {
+    private string selectedEntity = "";
+
+    private string SelectedEntity
+    {
+        get => selectedEntity;
+        set
+        {
+            selectedEntity = value;
+            if (!string.IsNullOrEmpty(selectedEntity))
+            {
+                NavigateToEntityCreator();
+            }
+        }
+    }
+
+    private void NavigateToEntityCreator()
+    {
+        NavigationManager.NavigateTo($"/admin/create/{selectedEntity}");
+    }
+}

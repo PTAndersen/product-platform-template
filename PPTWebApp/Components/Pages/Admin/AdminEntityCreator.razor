@@ -1,0 +1,120 @@
+﻿@page "/admin/create/{entityType}"
+@attribute [Authorize(Roles = "Admin")]
+@using Microsoft.AspNetCore.Authorization
+@using PPTWebApp.Components.Pages.Admin.EntityForms
+@using PPTWebApp.Data.Models
+@using PPTWebApp.Data.Services
+@inject DiscountService DiscountService
+@inject ProductService ProductService
+@inject ProductCategoryService ProductCategoryService
+@inject ProductInventoryService ProductInventoryService
+@inject NavigationManager NavigationManager
+@rendermode InteractiveServer
+
+<div class="entity-creator-container">
+    <h2>Create New @entityType</h2>
+
+    @if (!string.IsNullOrEmpty(errorMessage))
+    {
+        <div class="alert alert-danger">@errorMessage</div>
+    }
+    else
+    {
+        @switch (entityType.ToLower())
+        {
+            case "product":
+                <ProductForm ProductData="(Product)entityData" OnSave="SaveEntity" />
+                break;
+
+            case "discount":
+                <DiscountForm DiscountData="(Discount)entityData" OnSave="SaveEntity" />
+                break;
+
+            case "category":
+                <ProductCategoryForm CategoryData="(ProductCategory)entityData" OnSave="SaveEntity" />
+                break;
+
+            case "inventory":
+                <ProductInventoryForm InventoryData="(ProductInventory)entityData" OnSave="SaveEntity" />
+                break;
+
+            default:
+                <div>Unsupported entity type: @entityType</div>
+                break;
+        }
+    }
+</div>
+
+@code {
+    [Parameter] public string entityType { get; set; } = "products";
+    
+    private object? entityData;
+    private string errorMessage = string.Empty;
+
+    protected override void OnInitialized()
+    {
+        // Initialize entityData with an appropriate empty object based on the entity type.
+        entityData = entityType.ToLower() switch
+        {
+            "product" => new Product() { Name = "", Description = "", SKU = "", ImageUrl = "", ImageCompromise = "" },
+            "discount" => new Discount() { Name = "", Description = "" },
+            "category" => new ProductCategory() { Name = "", Description = "" },
+            "inventory" => new ProductInventory() { Quantity = 0 },
+            _ => null
+        };
+
+        if (entityData == null)
+        {
+            errorMessage = "Unsupported entity type.";
+        }
+    }
+
+    private async Task SaveEntity()
+    {
+        try
+        {
+            switch (entityType.ToLower())
+            {
+                case "product":
+                    if (entityData is Product product)
+                    {
+                        await ProductService.AddProductAsync(product, CancellationToken.None);
+                        NavigationManager.NavigateTo("/admin");
+                    }
+                    break;
+
+                case "discount":
+                    if (entityData is Discount discount)
+                    {
+                        await DiscountService.AddDiscountAsync(discount, CancellationToken.None);
+                        NavigationManager.NavigateTo("/admin");
+                    }
+                    break;
+
+                case "category":
+                    if (entityData is ProductCategory category)
+                    {
+                        await ProductCategoryService.AddCategoryAsync(category, CancellationToken.None);
+                        NavigationManager.NavigateTo("/admin");
+                    }
+                    break;
+
+                case "inventory":
+                    if (entityData is ProductInventory inventory)
+                    {
+                        await ProductInventoryService.AddProductInventoryAsync(inventory, CancellationToken.None);
+                        NavigationManager.NavigateTo("/admin");
+                    }
+                    break;
+
+                default:
+                    errorMessage = "Unsupported entity type.";
+                    break;
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Error saving {entityType}: {ex.Message}";
+        }
+    }
+}

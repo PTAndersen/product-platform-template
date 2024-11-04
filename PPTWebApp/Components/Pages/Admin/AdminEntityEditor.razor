@@ -1,0 +1,178 @@
+﻿@page "/admin/edit/{entityType}/{id:int}"
+@attribute [Authorize(Roles = "Admin")]
+@using Microsoft.AspNetCore.Authorization
+@using PPTWebApp.Components.Pages.Admin.EntityForms
+@using PPTWebApp.Data.Models
+@using PPTWebApp.Data.Services
+@inject PostService PostService
+@inject DiscountService DiscountService
+@inject ProductService ProductService
+@inject ProductCategoryService ProductCategoryService
+@inject ProductInventoryService ProductInventoryService
+@inject NavigationManager NavigationManager
+@rendermode InteractiveServer
+
+<div class="entity-editor-container">
+    <h2>Edit @entityType</h2>
+
+    @if (!string.IsNullOrEmpty(errorMessage))
+    {
+        <div class="alert alert-danger">@errorMessage</div>
+    }
+    else if (entityData == null)
+    {
+        <div>Loading @entityType details...</div>
+    }
+    else
+    {
+        @switch (entityType.ToLower())
+        {
+            case "posts":
+                <PostForm PostData="(Post)entityData" OnSave="SaveChanges" OnFileUpload="HandleContentFileUpload" />
+                break;
+
+            case "discounts":
+                <DiscountForm DiscountData="(Discount)entityData" OnSave="SaveChanges" />
+                break;
+
+            case "products":
+                <ProductForm ProductData="(Product)entityData" OnSave="SaveChanges" />
+                break;
+
+            case "categories":
+                <ProductCategoryForm CategoryData="(ProductCategory)entityData" OnSave="SaveChanges" />
+                break;
+
+            case "inventories":
+                <ProductInventoryForm InventoryData="(ProductInventory)entityData" OnSave="SaveChanges" />
+                break;
+
+            default:
+                <div>Unsupported entity type: @entityType</div>
+                break;
+        }
+    }
+</div>
+
+@code {
+    [Parameter] public string entityType { get; set; } = "posts";
+    [Parameter] public int id { get; set; }
+
+    private object? entityData;
+    private string errorMessage = string.Empty;
+    private IBrowserFile? uploadedFile;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            switch (entityType.ToLower())
+            {
+                case "posts":
+                    entityData = await PostService.GetPostByIdAsync(id, CancellationToken.None);
+                    if (entityData == null) errorMessage = "Post not found.";
+                    break;
+
+                case "discounts":
+                    entityData = await DiscountService.GetDiscountByIdAsync(id, CancellationToken.None);
+                    if (entityData == null) errorMessage = "Discount not found.";
+                    break;
+
+                case "products":
+                    entityData = await ProductService.GetProductByIdAsync(id, CancellationToken.None);
+                    if (entityData == null) errorMessage = "Product not found.";
+                    break;
+
+                case "categories":
+                    entityData = await ProductCategoryService.GetCategoryByIdAsync(id, CancellationToken.None);
+                    if (entityData == null) errorMessage = "Category not found.";
+                    break;
+
+                case "inventories":
+                    entityData = await ProductInventoryService.GetProductInventoryByIdAsync(id, CancellationToken.None);
+                    if (entityData == null) errorMessage = "Inventory not found.";
+                    break;
+
+                default:
+                    errorMessage = "Unsupported entity type.";
+                    break;
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Error loading {entityType}: {ex.Message}";
+        }
+    }
+
+    private async Task HandleContentFileUpload(IBrowserFile file)
+    {
+        uploadedFile = file;
+        if (uploadedFile != null && entityData is Post post)
+        {
+            try
+            {
+                var filePath = Path.Combine("wwwroot", "uploads", $"{post.Id}.html");
+                using var stream = uploadedFile.OpenReadStream();
+                using var fileStream = new FileStream(filePath, FileMode.Create);
+                await stream.CopyToAsync(fileStream);
+            }
+            catch (Exception ex)
+            {
+                errorMessage = $"Error uploading HTML file: {ex.Message}";
+            }
+        }
+    }
+
+    private async Task SaveChanges()
+    {
+        try
+        {
+            switch (entityType.ToLower())
+            {
+                case "posts":
+                    if (entityData is Post post)
+                    {
+                        await PostService.UpdatePostAsync(post, CancellationToken.None);
+                        NavigationManager.NavigateTo("/admin");
+                    }
+                    break;
+
+                case "discounts":
+                    if (entityData is Discount discount)
+                    {
+                        await DiscountService.UpdateDiscountAsync(discount, CancellationToken.None);
+                        NavigationManager.NavigateTo("/admin");
+                    }
+                    break;
+
+                case "products":
+                    if (entityData is Product product)
+                    {
+                        await ProductService.UpdateProductAsync(product, CancellationToken.None);
+                        NavigationManager.NavigateTo("/admin");
+                    }
+                    break;
+
+                case "categories":
+                    if (entityData is ProductCategory category)
+                    {
+                        await ProductCategoryService.UpdateCategoryAsync(category, CancellationToken.None);
+                        NavigationManager.NavigateTo("/admin");
+                    }
+                    break;
+
+                case "inventories":
+                    if (entityData is ProductInventory inventory)
+                    {
+                        await ProductInventoryService.UpdateProductInventoryAsync(inventory, CancellationToken.None);
+                        NavigationManager.NavigateTo("/admin");
+                    }
+                    break;
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Error saving {entityType}: {ex.Message}";
+        }
+    }
+}

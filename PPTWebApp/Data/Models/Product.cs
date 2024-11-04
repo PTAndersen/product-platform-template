@@ -9,7 +9,7 @@
         public ProductCategory? ProductCategory { get; set; }
         //Nullable in DB: indicates a software product (non physical)
         public ProductInventory? ProductInventory { get; set; }
-        public required decimal Price { get; set; }
+        public decimal Price { get; set; }
         public Discount? Discount { get; set; }
         public required string ImageUrl { get; set; }
         // "horizontal" or "vertical". Possibly "auto"/"never"

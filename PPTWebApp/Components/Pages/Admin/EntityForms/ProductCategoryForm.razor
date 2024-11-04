@@ -1,0 +1,34 @@
+﻿@using Microsoft.AspNetCore.Components.Forms
+@using PPTWebApp.Data.Models
+
+<EditForm Model="CategoryData" OnValidSubmit="HandleValidSubmit">
+    <div class="form-group">
+        <label for="name">Category Name</label>
+        <InputText id="name" class="form-control" @bind-Value="CategoryData.Name" />
+        <ValidationMessage For="@(() => CategoryData.Name)" />
+    </div>
+
+    <div class="form-group">
+        <label for="description">Description</label>
+        <InputTextArea id="description" class="form-control" @bind-Value="CategoryData.Description" />
+        <ValidationMessage For="@(() => CategoryData.Description)" />
+    </div>
+
+    <button type="submit" class="btn btn-primary">Save Changes</button>
+</EditForm>
+
+@code {
+    [Parameter] public ProductCategory CategoryData { get; set; } = new ProductCategory()
+    {
+        Name = "",
+        Description = ""
+    };
+    [Parameter] public EventCallback OnSave { get; set; }
+
+    private async Task HandleValidSubmit()
+    {
+        // TODO: Any additional form-specific logic (like validation feedback)
+
+        await OnSave.InvokeAsync(CategoryData);
+    }
+}
