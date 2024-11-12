@@ -7,6 +7,7 @@
             public required string CompanyName { get; set; }
             public required string LogoUrl { get; set; }
             public required string ThemeColor { get; set; }
+            public required string FaviconPath { get; set; }
         }
     }
 

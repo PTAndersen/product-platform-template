@@ -10,6 +10,7 @@
     text-align: center;
     width: auto;
     height: auto;
+    min-width: 450px;
     box-sizing: border-box;
     flex-grow: 0;
     flex-shrink: 1;
@@ -42,4 +43,9 @@
     font-size: 1rem;
     font-weight: bold;
     color: #333;
+}
+
+p {
+    font-size: 1.2rem;
+    color: #666;
 }

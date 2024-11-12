@@ -10,25 +10,28 @@
 
     protected override async Task OnInitializedAsync()
     {
-        Products = (await HighlightService.GetHighlightsAsync(CancellationToken.None)).Take(maxProductsToDisplay).ToList();
+        Products = (await HighlightService.GetHighlightsAsync(CancellationToken.None))
+                    .Where(product => product != null)
+                    .Take(maxProductsToDisplay)
+                    .ToList();
     }
 }
 
 <div class="container">
     <div class="text-center mb-4">
-        <h1>Lorem Ipsum</h1>
+        <h1>Featured Products</h1>
         <p>
-            Lorem ipsum dolor sit amet, consectetur adipiscing elit.
-            Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.
-            Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.
+            These products have been carefully selected to showcase the best of what we offer. Each highlighted item represents the quality, innovation, and sustainability that we strive for in every product. Whether it’s exceptional craftsmanship, eco-friendly materials, or customer favorites, these products are designed to inspire and enhance your experience.
         </p>
     </div>
 
     <div class="row product-grid justify-content-center">
         @foreach (var product in Products)
         {
-            <div class="col-12 col-md-4 col-lg-3 product-item">
-                <ProductPreview Product="@product" />
+            <div class="col-12 col-md-6 col-lg-3">
+                <div class="product-box">
+                    <ProductPreview Product="@product" />
+                </div>
             </div>
         }
     </div>

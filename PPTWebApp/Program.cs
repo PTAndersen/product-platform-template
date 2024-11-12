@@ -10,7 +10,6 @@ using PPTWebApp.Data.Models;
 using PPTWebApp.Data.Repositories;
 using PPTWebApp.Data.Repositories.Interfaces;
 using PPTWebApp.Data.Services;
-using System.Security.Cryptography.X509Certificates;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -22,6 +21,8 @@ Env.Load();
 builder.Configuration.AddJsonFile("branding.json", optional: true, reloadOnChange: true);
 
 string profileName = builder.Configuration["BrandingProfile"] ?? "default";
+
+profileName = "SageSprout";
 
 var brandingSettings = builder.Configuration.GetSection("profiles").Get<Dictionary<string, BrandingSettings.ProfileSettings>>();
 
@@ -61,8 +62,6 @@ Console.WriteLine("Running in container: " + (isRunningInContainer == true? "tru
 var connectionString = isRunningInContainer
     ? Environment.GetEnvironmentVariable("CONTAINER_DATABASE_URL")
     : Environment.GetEnvironmentVariable("NON_CONTAINER_DATABASE_URL");
-
-//Console.WriteLine("DATABASE_URL from Environment: " + connectionString);
 
 if (string.IsNullOrWhiteSpace(connectionString))
 {
@@ -189,8 +188,11 @@ using (var scope = app.Services.CreateScope())
     var services = scope.ServiceProvider;
     var userManager = services.GetRequiredService<UserManager<ApplicationUser>>();
     var roleManager = services.GetRequiredService<RoleManager<IdentityRole>>();
+    var productService = services.GetRequiredService<ProductService>();
+    var highlightService = services.GetRequiredService<HighlightService>();
+    var postService = services.GetRequiredService<PostService>();
 
-    var dataInitializer = new DataInitializer(connectionString, userManager, roleManager);
+    var dataInitializer = new DataInitializer(connectionString, userManager, roleManager, productService, highlightService, postService);
     await dataInitializer.InitializeDataAsync();
 }
 

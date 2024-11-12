@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Identity;
 using Npgsql;
 using PPTWebApp.Data.Models;
+using PPTWebApp.Data.Services;
 
 namespace PPTWebApp.Data
 {
@@ -9,12 +10,18 @@ namespace PPTWebApp.Data
         private readonly string _connectionString;
         private readonly UserManager<ApplicationUser> _userManager;
         private readonly RoleManager<IdentityRole> _roleManager;
+        private readonly ProductService _productService;
+        private readonly HighlightService _highlightService;
+        private readonly PostService _postService;
 
-        public DataInitializer(string connectionString, UserManager<ApplicationUser> userManager, RoleManager<IdentityRole> roleManager)
+        public DataInitializer(string connectionString, UserManager<ApplicationUser> userManager, RoleManager<IdentityRole> roleManager, ProductService productService, HighlightService highlightService, PostService postService)
         {
             _connectionString = connectionString;
             _userManager = userManager;
             _roleManager = roleManager;
+            _productService = productService;
+            _highlightService = highlightService;
+            _postService = postService;
         }
 
         public async Task InitializeDataAsync()
@@ -22,7 +29,7 @@ namespace PPTWebApp.Data
             CreateTables();
             CreateTriggers();
             await CreateUsersAndRoles();
-            InsertDummyData(9);
+            await InsertDummyData();
         }
 
         private void CreateTables()
@@ -458,98 +465,67 @@ namespace PPTWebApp.Data
         }
 
 
-        private void InsertDummyData(int count)
+        async private Task InsertDummyData()
         {
-            using (var connection = new NpgsqlConnection(_connectionString))
+            if (await _productService.GetTotalProductCountAsync(null, "", 0, 1000000, CancellationToken.None) < 3)
             {
-                connection.Open();
-
-                string insertCategorySql = @"
-                    INSERT INTO productcategories (name, description, createdat)
-                    SELECT @Name, @Description, @CreatedAt
-                    WHERE NOT EXISTS (SELECT 1 FROM productcategories WHERE name = @Name)";
-
-                // Category 1: Electronics
-                using (var insertCategoryCommand = new NpgsqlCommand(insertCategorySql, connection))
+                Product product1 = new Product()
                 {
-                    insertCategoryCommand.Parameters.AddWithValue("@Name", "Electronics");
-                    insertCategoryCommand.Parameters.AddWithValue("@Description", "Electronic devices and gadgets.");
-                    insertCategoryCommand.Parameters.AddWithValue("@CreatedAt", DateTime.Now);
-                    insertCategoryCommand.ExecuteNonQuery();
-                }
+                    Name = "Wooden bowl",
+                    Description = "Immaculate bowl made of wood",
+                    SKU = "WOOD-BOWL",
+                    ImageUrl = "images/sageSproutDemo/WoodenBowl.png",
+                    ImageCompromise = "Vertical",
+                    Price = 12
+                };
+                await _productService.AddProductAsync(product1, CancellationToken.None);
 
-                // Category 2: Software
-                using (var insertCategoryCommand = new NpgsqlCommand(insertCategorySql, connection))
+                Product product2 = new Product()
                 {
-                    insertCategoryCommand.Parameters.AddWithValue("@Name", "Software");
-                    insertCategoryCommand.Parameters.AddWithValue("@Description", "Software products with digital delivery.");
-                    insertCategoryCommand.Parameters.AddWithValue("@CreatedAt", DateTime.Now);
-                    insertCategoryCommand.ExecuteNonQuery();
-                }
+                    Name = "Wooden cutlery",
+                    Description = "Immaculate cutlery made of wood",
+                    SKU = "WOOD-Cutlery",
+                    ImageUrl = "images/sageSproutDemo/WoodenCutlery.png",
+                    ImageCompromise = "Vertical",
+                    Price = 15
+                };
+                await _productService.AddProductAsync(product2, CancellationToken.None);
 
+                Product product3 = new Product()
+                {
+                    Name = "Wooden Cup",
+                    Description = "Immaculate cup made of wood",
+                    SKU = "WOOD-CUP",
+                    ImageUrl = "images/sageSproutDemo/WoodenCup.png",
+                    ImageCompromise = "Vertical",
+                    Price = 20
+                };
+                await _productService.AddProductAsync(product3, CancellationToken.None);
+
+                await _highlightService.AddHighlightAsync(1, 1, CancellationToken.None);
+            }
+
+            if (await _postService.GetTotalPostCountAsync("", CancellationToken.None) < 10)
+            {
+                int count = 10;
                 for (int i = 1; i <= count; i++)
                 {
-                    int categoryId = (i % 2 == 0) ? 2 : 1;
-                    int? inventoryId = null;
 
-                    if (categoryId == 1)
+                    var post = new Post
                     {
-                        string insertInventorySql = @"
-                            INSERT INTO productinventories (quantity, createdat)
-                            VALUES (@Quantity, @CreatedAt) RETURNING id";
+                        Title = $"Post {i}",
+                        Content = $"This is the content of post {i}.",
+                        ImageUrl = "images/sageSproutDemo/Timber3.png",
+                        ImageCompromise = "vertical",
+                        DatePosted = DateTime.Now
+                    };
 
-                        using (var insertInventoryCommand = new NpgsqlCommand(insertInventorySql, connection))
-                        {
-                            insertInventoryCommand.Parameters.AddWithValue("@Quantity", 100 + i);
-                            insertInventoryCommand.Parameters.AddWithValue("@CreatedAt", DateTime.Now);
-                            inventoryId = insertInventoryCommand.ExecuteScalar() as int?;
-                            if (inventoryId == null)
-                            {
-                                throw new InvalidOperationException("Failed to insert inventory and retrieve the ID.");
-                            }
-
-                        }
-                    }
-
-                    string insertProductSql = @"
-                        INSERT INTO products (name, description, sku, categoryid, inventoryid, price, imageurl, imagecompromise)
-                        SELECT @Name, @Description, @SKU, @CategoryId, @InventoryId, @Price, @ImageUrl, @ImageCompromise
-                        WHERE NOT EXISTS (SELECT 1 FROM products WHERE name = @Name)";
-
-                    using (var insertProductCommand = new NpgsqlCommand(insertProductSql, connection))
-                    {
-                        insertProductCommand.Parameters.AddWithValue("@Name", $"Product {i}");
-                        insertProductCommand.Parameters.AddWithValue("@Description", $"This is the description of product {i}.");
-                        insertProductCommand.Parameters.AddWithValue("@SKU", $"SKU-{i}");
-                        insertProductCommand.Parameters.AddWithValue("@CategoryId", categoryId);
-                        insertProductCommand.Parameters.AddWithValue("@InventoryId", inventoryId.HasValue ? inventoryId.Value : DBNull.Value);
-                        insertProductCommand.Parameters.AddWithValue("@Price", 9.99m + i);
-                        insertProductCommand.Parameters.AddWithValue("@ImageUrl", $"https://via.placeholder.com/400?text=Product+{i}");
-                        insertProductCommand.Parameters.AddWithValue("@ImageCompromise", "horizontal");
-                        insertProductCommand.ExecuteNonQuery();
-                    }
-
-                    string insertPostSql = @"
-                        INSERT INTO posts (title, content, imageurl, imagecompromise, dateposted)
-                        SELECT @Title, @Content, @ImageUrl, @ImageCompromise, @DatePosted
-                        WHERE NOT EXISTS (SELECT 1 FROM posts WHERE title = @Title)";
-
-                    using (var insertPostCommand = new NpgsqlCommand(insertPostSql, connection))
-                    {
-                        insertPostCommand.Parameters.AddWithValue("@Title", $"Post {i}");
-                        insertPostCommand.Parameters.AddWithValue("@Content", $"This is the content of post {i}.");
-                        insertPostCommand.Parameters.AddWithValue("@ImageUrl", "https://via.placeholder.com/400x400");
-                        insertPostCommand.Parameters.AddWithValue("@ImageCompromise", "vertical");
-                        insertPostCommand.Parameters.AddWithValue("@DatePosted", DateTime.Now);
-                        insertPostCommand.ExecuteNonQuery();
-                    }
+                    await _postService.AddPostAsync(post, CancellationToken.None);
 
                 }
-
-                connection.Close();
             }
         }
-
+    
 
         private async Task CreateUsersAndRoles()
         {
