@@ -1,0 +1,164 @@
+﻿@page "/admin/files"
+@attribute [Authorize(Roles = "Admin")]
+@using Microsoft.AspNetCore.Authorization
+@using PPTWebApp.Data.Services
+@inject FileStorageService FileService
+@inject AppConfigService ConfigService
+@inject IJSRuntime JS
+@rendermode InteractiveServer
+
+<h3>File Manager</h3>
+
+<div class="file-manager">
+    <InputFile OnChange="OnFileSelected" />
+    <button @onclick="UploadFileAsync" class="btn btn-primary">Upload File</button>
+    <p>@statusMessage</p>
+
+    @if (!string.IsNullOrEmpty(uploadedFileUrl))
+    {
+        <div class="uploaded-file-info">
+            <p>Uploaded File URL:</p>
+            <input type="text" class="form-control" value="@uploadedFileUrl" readonly />
+            <button class="btn btn-secondary" @onclick="() => CopyToClipboard(uploadedFileUrl)">Copy URL to Clipboard</button>
+        </div>
+    }
+
+    <input @bind="searchKeyword" placeholder="Search files..." @oninput="OnSearchChangedAsync" class="form-control" />
+
+    <div class="table-responsive">
+        <table class="table table-striped table-hover">
+            <thead>
+                <tr>
+                    <th>Filename</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var file in PaginatedFiles)
+                {
+                    <tr>
+                        <td>@file</td>
+                        <td>
+                            <button class="btn btn-danger" @onclick="() => DeleteFileAsync(file)">Delete</button>
+                            <button class="btn btn-secondary" @onclick="() => CopyToClipboard(GetFileUrl(file))">Copy URL</button>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+
+    <div class="pagination">
+        <button class="pagination-btn" @onclick="LoadPreviousPageAsync" disabled="@((PageIndex == 0))">←</button>
+        <span class="pagination-text">Page</span>
+        <input type="number" value="@(PageIndex + 1)" min="1" max="@TotalPages" class="page-input" @onchange="OnPageInputChange" />
+        <span class="pagination-text">of @TotalPages</span>
+        <button class="pagination-btn" @onclick="LoadNextPageAsync" disabled="@((PageIndex == TotalPages - 1))">→</button>
+    </div>
+</div>
+
+@code {
+    private List<string> PaginatedFiles = new();
+    private string searchKeyword = string.Empty;
+    private IBrowserFile? selectedFile;
+    private int PageSize = 10;
+    private int PageIndex = 0;
+    private int TotalItems;
+    private int TotalPages => (int)Math.Ceiling(TotalItems / (double)PageSize);
+    private string statusMessage = "";
+    private string? uploadedFileUrl = null;
+
+    private void OnFileSelected(InputFileChangeEventArgs e)
+    {
+        selectedFile = e.File;
+    }
+
+    private async Task UploadFileAsync()
+    {
+        if (selectedFile == null)
+        {
+            statusMessage = "No file selected.";
+            return;
+        }
+
+        using var memoryStream = new MemoryStream();
+        await selectedFile.OpenReadStream().CopyToAsync(memoryStream);
+
+        var formFile = new FormFile(memoryStream, 0, memoryStream.Length, null, selectedFile.Name);
+        var result = await FileService.UploadFileAsync(formFile);
+        if (result != null)
+        {
+            statusMessage = "File uploaded successfully.";
+            uploadedFileUrl = GetFileUrl(result);
+        }
+        else
+        {
+            statusMessage = "Failed to upload file.";
+            uploadedFileUrl = null;
+        }
+    }
+
+    private string GetFileUrl(string fileName)
+    {
+        var baseUrl = ConfigService.StaticFileBaseUrl;
+        return $"{baseUrl}{fileName}";
+    }
+
+    private async Task CopyToClipboard(string text)
+    {
+        await JS.InvokeVoidAsync("navigator.clipboard.writeText", text);
+        statusMessage = "URL copied to clipboard!";
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadFilesAsync();
+    }
+
+    private async Task LoadFilesAsync()
+    {
+        TotalItems = await FileService.GetFileCountAsync(searchKeyword);
+        PaginatedFiles = (await FileService.ListFilesAsync(searchKeyword, PageIndex * PageSize, PageSize)).ToList();
+        StateHasChanged();
+    }
+
+    private async Task OnSearchChangedAsync()
+    {
+        PageIndex = 0;
+        await LoadFilesAsync();
+    }
+
+    private async Task LoadNextPageAsync()
+    {
+        if (PageIndex < TotalPages - 1)
+        {
+            PageIndex++;
+            await LoadFilesAsync();
+        }
+    }
+
+    private async Task LoadPreviousPageAsync()
+    {
+        if (PageIndex > 0)
+        {
+            PageIndex--;
+            await LoadFilesAsync();
+        }
+    }
+
+    private void OnPageInputChange(ChangeEventArgs e)
+    {
+        if (e.Value != null && int.TryParse(e.Value.ToString(), out var inputPage))
+        {
+            PageIndex = Math.Clamp(inputPage - 1, 0, TotalPages - 1);
+            LoadFilesAsync();
+        }
+    }
+
+    private async Task DeleteFileAsync(string fileName)
+    {
+        var success = await FileService.DeleteFileAsync(fileName);
+        statusMessage = success ? "File deleted successfully." : "Failed to delete file.";
+        await LoadFilesAsync();
+    }
+}

@@ -1,6 +1,7 @@
 using DotNetEnv;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Components.Authorization;
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Identity;
 using PPTWebApp.Components;
 using PPTWebApp.Components.Account;
@@ -9,10 +10,11 @@ using PPTWebApp.Data.Models;
 using PPTWebApp.Data.Repositories;
 using PPTWebApp.Data.Repositories.Interfaces;
 using PPTWebApp.Data.Services;
+using System.Security.Cryptography.X509Certificates;
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.WebHost.UseUrls("http://*:80");
+//builder.WebHost.UseUrls("http://*:80");
 
 Env.Load();
 
@@ -34,14 +36,52 @@ else
 
 #endregion
 
-var connectionString = Environment.GetEnvironmentVariable("DATABASE_URL"); // used to be: builder.Configuration.GetConnectionString("DefaultConnection");
+/*
+var certificatePath = Environment.GetEnvironmentVariable("CERTIFICATE_PATH");
+var certificatePassword = Environment.GetEnvironmentVariable("CERTIFICATE_PASSWORD");
 
-Console.WriteLine("DATABASE_URL from Environment: " + connectionString);
+if (string.IsNullOrEmpty(certificatePath) || string.IsNullOrEmpty(certificatePassword))
+{
+    throw new InvalidOperationException("Certificate path and password must be set in environment variables.");
+}
+
+var certificate = new X509Certificate2(certificatePath, certificatePassword);
+
+builder.Services.AddDataProtection()
+    .PersistKeysToFileSystem(new DirectoryInfo(@"/root/.aspnet/DataProtection-Keys"))
+    .ProtectKeysWithCertificate(certificate);
+*/
+
+
+
+var isRunningInContainer = Environment.GetEnvironmentVariable("DOTNET_RUNNING_IN_CONTAINER") == "true";
+
+Console.WriteLine("Running in container: " + (isRunningInContainer == true? "true" : "false"));
+
+var connectionString = isRunningInContainer
+    ? Environment.GetEnvironmentVariable("CONTAINER_DATABASE_URL")
+    : Environment.GetEnvironmentVariable("NON_CONTAINER_DATABASE_URL");
+
+//Console.WriteLine("DATABASE_URL from Environment: " + connectionString);
 
 if (string.IsNullOrWhiteSpace(connectionString))
 {
-    throw new InvalidOperationException("Connection string 'DefaultConnection' is either missing or empty.");
+    throw new InvalidOperationException("Connection string 'connectionString' is either missing or empty.");
 }
+
+string staticFilesPath = Environment.GetEnvironmentVariable("STATIC_FILES_PATH") ?? "";
+
+if (string.IsNullOrWhiteSpace(staticFilesPath) && isRunningInContainer == true)
+{
+    throw new InvalidOperationException("Static files path 'staticFilesPath' is either missing or empty.");
+}
+
+var staticFileBaseUrl = Environment.GetEnvironmentVariable("STATIC_FILE_BASE_URL") ?? "";
+if (string.IsNullOrWhiteSpace(connectionString))
+{
+    throw new InvalidOperationException("Static file base url 'staticFileBaseUrl' is either missing or empty.");
+}
+builder.Services.AddSingleton(new AppConfigService { StaticFileBaseUrl = staticFileBaseUrl });
 
 builder.Services.AddScoped<IUserProfileRepository>(provider => new UserProfileRepository(connectionString));
 //builder.Services.AddScoped<UserProfileService>();
@@ -87,6 +127,8 @@ builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationSc
 builder.Services.AddCascadingAuthenticationState();
 builder.Services.AddScoped<IdentityUserAccessor>();
 builder.Services.AddScoped<IdentityRedirectManager>();
+builder.Services.AddScoped<IFileStorageRepository>(sp => new FileStorageRepository(staticFilesPath));
+builder.Services.AddScoped<FileStorageService>();
 builder.Services.AddScoped<IPostRepository>(provider => new PostRepository(connectionString));
 builder.Services.AddScoped<PostService>();
 builder.Services.AddScoped<IProductRepository>(provider => new ProductRepository(connectionString));

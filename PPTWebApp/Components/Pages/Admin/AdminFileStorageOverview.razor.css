@@ -1,0 +1,102 @@
+﻿.file-manager {
+    padding: 1.5rem;
+    box-sizing: border-box;
+}
+
+.file-manager h3 {
+    font-weight: bold;
+    margin-bottom: 1rem;
+}
+
+.form-control {
+    max-width: 300px;
+    margin-bottom: 20px;
+}
+
+.table-responsive {
+    margin-top: 20px;
+}
+
+.table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.table th,
+.table td {
+    padding: 0.75rem;
+    text-align: left;
+    border-top: 1px solid #dee2e6;
+}
+
+.table th {
+    background-color: #f8f9fa;
+    font-weight: bold;
+}
+
+.btn-primary {
+    background-color: #007bff;
+    color: #fff;
+    border: none;
+    padding: 0.5rem 1rem;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.btn-primary:hover {
+    background-color: #0056b3;
+}
+
+.btn-danger {
+    background-color: #dc3545;
+    color: #fff;
+    border: none;
+    padding: 0.5rem 1rem;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.btn-danger:hover {
+    background-color: #c82333;
+}
+
+.pagination {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 1rem 0;
+    margin-top: 20px;
+}
+
+.pagination-btn {
+    background-color: #212529;
+    color: #fff;
+    border: none;
+    padding: 0.5rem 1rem;
+    margin: 0 0.5rem;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+    .pagination-btn:disabled {
+        background-color: #e0e0e0;
+        color: #aaa;
+        cursor: not-allowed;
+    }
+
+.page-input {
+    width: 4rem;
+    min-width: 3.5rem;
+    text-align: center;
+    padding: 0.5rem;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    margin: 0 0.5rem;
+    box-sizing: border-box;
+}
+
+.status-message {
+    margin-top: 1rem;
+    font-size: 0.9rem;
+    color: #6c757d;
+}

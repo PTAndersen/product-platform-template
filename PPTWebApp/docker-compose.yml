@@ -1,12 +1,23 @@
 services:
+  watchtower:
+    image: containrrr/watchtower
+    command:
+      - "--label-enable"
+      - "--interval"
+      - "30"
+      - "--rolling-restart"
+    volumes:
+      - "/var/run/docker.sock:/var/run/docker.sock:ro"
   postgres:
     image: postgres:latest
     environment:
       - POSTGRES_USER=${POSTGRES_USER}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
       - POSTGRES_DB=${POSTGRES_DB}
-    ports:
-      - "127.0.0.1:5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - web
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
       interval: 10s
@@ -14,17 +25,90 @@ services:
       retries: 3
       start_period: 10s
 
+  traefik:
+    image: traefik:v2.9
+    command:
+      - "--providers.docker"
+      - "--providers.docker.exposedbydefault=false"
+      - "--entrypoints.web.address=:80"
+      - "--entrypoints.web.http.redirections.entrypoint.to=websecure"
+      - "--entrypoints.web.http.redirections.entrypoint.scheme=https"
+      - "--entrypoints.websecure.address=:443"
+      - "--certificatesresolvers.myresolver.acme.tlschallenge=true"
+      - "--certificatesresolvers.myresolver.acme.email=${EMAIL}"
+      - "--certificatesresolvers.myresolver.acme.storage=/letsencrypt/acme.json"
+      #Uncomment to enable the traefik dashboard. WARNING: Not advised in production
+      #- "--api.insecure=true"
+    ports:
+      - "80:80"
+      - "443:443"
+      #Uncomment to enable the port for traefik dashboard. WARNING: Not advised in production
+      #- "8080:8080"
+    volumes:
+      - "/var/run/docker.sock:/var/run/docker.sock:ro"
+      - "./letsencrypt:/letsencrypt"
+    networks:
+      - web
+    restart: unless-stopped
+    labels:
+    - "traefik.http.middlewares.https-redirect.redirectscheme.scheme=https"
+    - "traefik.http.routers.images.tls.certresolver=myresolver"
+    - "traefik.http.services.nginx-static.loadbalancer.server.port=80"
+    - "traefik.http.middlewares.websocket-headers.headers.customrequestheaders.Connection=Upgrade"
+    - "traefik.http.middlewares.websocket-headers.headers.customrequestheaders.Upgrade=${http_upgrade}"
+
   pptwebapp:
     image: ${DOCKER_USERNAME}/pptwebapp:latest
-    ports:
-      - "8080:8080"
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.pptwebapp.rule=Host(`${DOMAIN_NAME}`, `${WWW_DOMAIN_NAME}`)"
+      - "traefik.http.routers.pptwebapp.entrypoints=websecure"
+      - "traefik.http.routers.pptwebapp.tls.certresolver=myresolver"
+      - "traefik.http.services.pptwebapp.loadbalancer.server.port=8080"
+      - "com.centurylinklabs.watchtower.enable=true"
+      - "traefik.http.services.pptwebapp.loadbalancer.sticky=true"
+    networks:
+      - web
+    restart: unless-stopped
     environment:
-      - DATABASE_URL=${DATABASE_URL}
+      - STATIC_FILES_PATH=${STATIC_FILES_PATH}
+      - CONTAINER_DATABASE_URL=${CONTAINER_DATABASE_URL}
+      - DOTNET_RUNNING_IN_CONTAINER=true
+      - CERTIFICATE_PATH=${CERTIFICATE_PATH}
+      - CERTIFICATE_PASSWORD=${CERTIFICATE_PASSWORD}
+    deploy:
+      mode: replicated
+      replicas: 1
     depends_on:
       postgres:
         condition: service_healthy
     volumes:
       - data_protection_keys:/root/.aspnet/DataProtection-Keys
+      - ${STATIC_FILES_PATH}:${STATIC_FILES_PATH}
+
+  nginx:
+    image: nginx:alpine
+    volumes:
+      - static_files_data:/usr/share/nginx/html:ro
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.images.rule=Host(`staticfiles.${DOMAIN_NAME}`)"
+      - "traefik.http.routers.images.entrypoints=websecure"
+      - "traefik.http.routers.images.tls.certresolver=myresolver"
+    networks:
+      - web
+    expose:
+      - "80" 
+
+networks:
+  web:
+    driver: bridge
 
 volumes:
+  postgres_data:
   data_protection_keys:
+  static_files_data:
+    driver_opts:
+      type: "none"
+      o: "bind"
+      device: "${STATIC_FILES_PATH}"  

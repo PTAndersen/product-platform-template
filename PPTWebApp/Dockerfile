@@ -15,6 +15,9 @@ FROM mcr.microsoft.com/dotnet/aspnet:8.0
 WORKDIR /app
 COPY --from=build /app .
 
+# Set environment variable to signal containerized environment
+ENV DOTNET_RUNNING_IN_CONTAINER=true
+
 # Expose port 80 to the outside world
 EXPOSE 80
 
