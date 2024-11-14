@@ -93,7 +93,7 @@ else
                 <p>@product.Description</p>
 
                 <p>
-                    <strong>Price:</strong>
+                    <strong>Price: </strong>
                     @if (product.Discount != null && product.Discount.IsActive)
                     {
                         <span class="text-muted text-decoration-line-through">@product.Price.ToString("C")</span>

@@ -8,6 +8,27 @@
     [Parameter] public Product? Product { get; set; }
 
     private string ImageClass => GetImageClass(Product?.ImageCompromise);
+    private decimal discountedPrice = 0;
+
+    protected override void OnParametersSet()
+    {
+        if (Product != null)
+        {
+            CalculateDiscountedPrice();
+        }
+    }
+
+    private void CalculateDiscountedPrice()
+    {
+        if (Product?.Discount != null && Product.Discount.IsActive)
+        {
+            discountedPrice = Product.Price - (Product.Price * (Product.Discount.DiscountPercent / 100));
+        }
+        else
+        {
+            discountedPrice = Product?.Price ?? 0;
+        }
+    }
 
     private string GetImageClass(string? imageCompromise)
     {
@@ -39,7 +60,18 @@
         <div class="product-info">
             <h4>@Product.Name</h4>
             <p>@Product.Description</p>
-            <p class="product-price">$@Product.Price</p>
+            <p class="product-price">
+                @if (Product.Discount != null && Product.Discount.IsActive)
+                {
+                    <span class="text-muted text-decoration-line-through">@Product.Price.ToString("C")</span>
+                    <span class="text-danger"> @discountedPrice.ToString("C")</span>
+                    <small class="text-success">(Save @Product.Discount.DiscountPercent%)</small>
+                }
+                else
+                {
+                    <span>@Product.Price.ToString("C")</span>
+                }
+            </p>
 
             <div class="product-actions">
                 <button class="btn btn-primary" @onclick="AddProductToBasket">Add to Cart</button>

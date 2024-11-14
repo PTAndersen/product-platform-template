@@ -57,6 +57,18 @@
                                             <div>
                                                 <span>@item.Product.Name</span><br />
                                                 <span class="text-muted">x @item.Quantity</span>
+                                                <br />
+                                                @if (item.Product.Discount != null && item.Product.Discount.IsActive)
+                                                {
+                                                    <span class="text-muted text-decoration-line-through">@item.Product.Price.ToString("C")</span>
+                                                    <span class="text-danger">
+                                                        @((item.Product.Price - (item.Product.Price * (item.Product.Discount.DiscountPercent / 100))).ToString("C"))
+                                                    </span>
+                                                }
+                                                else
+                                                {
+                                                    <span>@item.Product.Price.ToString("C")</span>
+                                                }
                                             </div>
                                         </div>
                                         <div class="d-flex align-items-center">
@@ -69,7 +81,7 @@
                             </ul>
                             <div class="dropdown-divider"></div>
                             <div class="dropdown-item">
-                                <strong>Total Price:</strong> @BasketService.GetTotalPrice().ToString("C")
+                                <strong>Total Price:</strong> @CalculateTotalPriceWithDiscount().ToString("C")
                             </div>
                             <div class="dropdown-item">
                                 <button class="btn btn-primary w-100" @onclick="GoToCheckout">Checkout</button>
@@ -160,6 +172,21 @@
         {
             BasketService.RemoveFromBasket(item);
         }
+    }
+
+    private decimal CalculateTotalPriceWithDiscount()
+    {
+        decimal total = 0;
+        foreach (var item in BasketService.GetBasketItems())
+        {
+            decimal pricePerItem = item.Product.Price;
+            if (item.Product.Discount != null && item.Product.Discount.IsActive)
+            {
+                pricePerItem -= pricePerItem * (item.Product.Discount.DiscountPercent / 100);
+            }
+            total += pricePerItem * item.Quantity;
+        }
+        return total;
     }
 
     private void GoToCheckout()
