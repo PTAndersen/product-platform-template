@@ -24,11 +24,10 @@
             These products have been carefully selected to showcase the best of what we offer. Each highlighted item represents the quality, innovation, and sustainability that we strive for in every product. Whether it’s exceptional craftsmanship, eco-friendly materials, or customer favorites, these products are designed to inspire and enhance your experience.
         </p>
     </div>
-
-    <div class="row product-grid justify-content-center">
+    <div class="row gx-3 gy-3 align-items-stretch product-grid">
         @foreach (var product in Products)
         {
-            <div class="col-12 col-md-6 col-lg-3">
+                <div class="col-12 col-md-6 col-lg-4 col-xl-3">
                 <div class="product-box">
                     <ProductPreview Product="@product" />
                 </div>

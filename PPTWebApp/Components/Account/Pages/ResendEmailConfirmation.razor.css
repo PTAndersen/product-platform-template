@@ -1,0 +1,37 @@
+﻿.resend-email-container {
+    height: 100%;
+    width: auto;
+}
+
+.resend-email-form {
+    background-color: #f8f9fa;
+    padding: 2rem;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    margin: 1rem;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    height: 100%;
+}
+
+    .resend-email-form h2 {
+        margin-bottom: 1.5rem;
+    }
+
+    .resend-email-form .form-floating {
+        margin-bottom: 1.5rem;
+    }
+
+    .resend-email-form button[type="submit"] {
+        margin-top: 1rem;
+    }
+
+    .resend-email-form a {
+        color: #007bff;
+        text-decoration: none;
+    }
+
+        .resend-email-form a:hover {
+            text-decoration: underline;
+        }

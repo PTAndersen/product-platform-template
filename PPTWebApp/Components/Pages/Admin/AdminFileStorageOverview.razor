@@ -7,7 +7,7 @@
 @inject IJSRuntime JS
 @rendermode InteractiveServer
 
-<h3>File Manager</h3>
+<h1>File Manager</h1>
 
 <div class="file-manager">
     <InputFile OnChange="OnFileSelected" />
@@ -36,11 +36,17 @@
             <tbody>
                 @foreach (var file in PaginatedFiles)
                 {
+                    var fileExtension = System.IO.Path.GetExtension(file).ToLower();
+                    bool isImageFile = fileExtension == ".jpg" || fileExtension == ".jpeg" || fileExtension == ".png";
+
                     <tr>
                         <td>@file</td>
                         <td>
-                            <button class="btn btn-danger" @onclick="() => DeleteFileAsync(file)">Delete</button>
-                            <button class="btn btn-secondary" @onclick="() => CopyToClipboard(GetFileUrl(file))">Copy URL</button>
+                            @if (isImageFile)
+                            {
+                                <button class="btn btn-danger" @onclick="() => DeleteFileAsync(file)">Delete</button>
+                                <button class="btn btn-secondary" @onclick="() => CopyToClipboard(GetFileUrl(file))">Copy URL</button>
+                            }
                         </td>
                     </tr>
                 }
@@ -71,6 +77,32 @@
     private void OnFileSelected(InputFileChangeEventArgs e)
     {
         selectedFile = e.File;
+
+        var allowedExtensions = new[] { ".jpg", ".jpeg", ".png" };
+        var allowedMimeTypes = new[] { "image/jpeg", "image/png" };
+        var maxFileSize = 5 * 1024 * 1024;
+
+        if (!allowedExtensions.Contains(Path.GetExtension(selectedFile.Name).ToLower()) ||
+            !allowedMimeTypes.Contains(selectedFile.ContentType) ||
+            selectedFile.Size > maxFileSize)
+        {
+            statusMessage = "Invalid file type or size.";
+            selectedFile = null;
+            return;
+        }
+
+        using var stream = selectedFile.OpenReadStream(maxFileSize);
+        byte[] buffer = new byte[4];
+        stream.Read(buffer, 0, buffer.Length);
+
+        if (!IsValidImageSignature(buffer))
+        {
+            statusMessage = "File content does not match a valid image type.";
+            selectedFile = null;
+            return;
+        }
+
+        statusMessage = "File is valid and ready for upload.";
     }
 
     private async Task UploadFileAsync()
@@ -81,15 +113,18 @@
             return;
         }
 
+        var uniqueFileName = $"{Guid.NewGuid()}{Path.GetExtension(selectedFile.Name).ToLower()}";
         using var memoryStream = new MemoryStream();
         await selectedFile.OpenReadStream().CopyToAsync(memoryStream);
 
-        var formFile = new FormFile(memoryStream, 0, memoryStream.Length, null, selectedFile.Name);
+        var formFile = new FormFile(memoryStream, 0, memoryStream.Length, null, uniqueFileName);
         var result = await FileService.UploadFileAsync(formFile);
+
         if (result != null)
         {
             statusMessage = "File uploaded successfully.";
-            uploadedFileUrl = GetFileUrl(result);
+            uploadedFileUrl = GetFileUrl(uniqueFileName);
+            await LoadFilesAsync();
         }
         else
         {
@@ -98,10 +133,29 @@
         }
     }
 
+    private bool IsValidImageSignature(byte[] fileSignature)
+    {
+        byte[] jpegSignature = new byte[] { 0xFF, 0xD8, 0xFF };
+        byte[] pngSignature = new byte[] { 0x89, 0x50, 0x4E, 0x47 };
+
+        if (fileSignature.Length >= 3 && fileSignature.Take(3).SequenceEqual(jpegSignature))
+        {
+            return true;
+        }
+
+        if (fileSignature.Length >= 4 && fileSignature.Take(4).SequenceEqual(pngSignature))
+        {
+            return true;
+        }
+
+        return false;
+    }
+
+
     private string GetFileUrl(string fileName)
     {
         var baseUrl = ConfigService.StaticFileBaseUrl;
-        return $"{baseUrl}{fileName}";
+        return $"{baseUrl}/{fileName}";
     }
 
     private async Task CopyToClipboard(string text)

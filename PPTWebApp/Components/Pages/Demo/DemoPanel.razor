@@ -1,0 +1,57 @@
+﻿@inject NavigationManager NavigationManager
+@rendermode InteractiveServer
+
+@code {
+    private bool isVisible = true;
+
+    private void ToggleVisibility()
+    {
+        isVisible = !isVisible;
+    }
+
+    private string userEmail = "user@example.com";
+    private string userPassword = "User@123";
+    private string adminEmail = "admin@example.com";
+    private string adminPassword = "Admin@123";
+
+    private void RedirectToLogin(string email, string password)
+    {
+        var loginUrl = $"/Account/Login?email={Uri.EscapeDataString(email)}&password={Uri.EscapeDataString(password)}";
+        NavigationManager.NavigateTo(loginUrl, forceLoad: true);
+    }
+}
+
+
+@if (isVisible)
+{
+    <div class="demo-panel">
+        <button class="toggle-button" @onclick="ToggleVisibility">
+            Hide
+        </button>
+
+        <div class="panel-content">
+            <h3>Demo Panel</h3>
+            <p>This is a fictitious web application, created to demonstrate its functionality.</p>
+            <p>
+                Registering a user account with personal data is not advised.
+            </p>
+            <p>
+                Accounts available for testing:
+                <br />
+                <strong>User Account:</strong>
+                <button @onclick="() => RedirectToLogin(userEmail, userPassword)" class="btn btn-primary mt-2">Login as User</button>
+                <br />
+                <strong>Admin Account:</strong>
+                <button @onclick="() => RedirectToLogin(adminEmail, adminPassword)" class="btn btn-secondary mt-2">Login as Admin</button>
+            </p>
+            <p>
+                Use the admin account to explore the admin panel, which provides additional access.
+                Please test the admin features respectfully, as they are fully functional and this demo is shared.
+            </p>
+        </div>
+    </div>
+}
+else
+{
+    <button class="show-button" @onclick="ToggleVisibility">Show</button>
+}

@@ -1,8 +1,19 @@
-﻿.product-grid {
+﻿.container {
     display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    height: 100%;
+    width: 100%;
+    margin: 0 auto;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding: 2rem;
+}
+
+.product-grid {
     justify-content: center;
-    gap: 1rem;
-    flex-wrap: nowrap;
+    gap: 2rem;
+    
 }
 
 .product-item {

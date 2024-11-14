@@ -1,7 +1,6 @@
 using DotNetEnv;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Components.Authorization;
-using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Identity;
 using PPTWebApp.Components;
 using PPTWebApp.Components.Account;
@@ -10,10 +9,9 @@ using PPTWebApp.Data.Models;
 using PPTWebApp.Data.Repositories;
 using PPTWebApp.Data.Repositories.Interfaces;
 using PPTWebApp.Data.Services;
+using System.Globalization;
 
 var builder = WebApplication.CreateBuilder(args);
-
-//builder.WebHost.UseUrls("http://*:80");
 
 Env.Load();
 
@@ -53,7 +51,9 @@ builder.Services.AddDataProtection()
     .ProtectKeysWithCertificate(certificate);
 */
 
-
+var euroCulture = new CultureInfo("fr-FR");
+CultureInfo.DefaultThreadCurrentCulture = euroCulture;
+CultureInfo.DefaultThreadCurrentUICulture = euroCulture;
 
 var isRunningInContainer = Environment.GetEnvironmentVariable("DOTNET_RUNNING_IN_CONTAINER") == "true";
 
@@ -76,7 +76,7 @@ if (string.IsNullOrWhiteSpace(staticFilesPath) && isRunningInContainer == true)
 }
 
 var staticFileBaseUrl = Environment.GetEnvironmentVariable("STATIC_FILE_BASE_URL") ?? "";
-if (string.IsNullOrWhiteSpace(connectionString))
+if (string.IsNullOrWhiteSpace(staticFileBaseUrl))
 {
     throw new InvalidOperationException("Static file base url 'staticFileBaseUrl' is either missing or empty.");
 }

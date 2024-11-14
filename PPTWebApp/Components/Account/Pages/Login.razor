@@ -61,6 +61,23 @@
     </div>
 </div>
 
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        const urlParams = new URLSearchParams(window.location.search);
+        const email = urlParams.get("email");
+        const password = urlParams.get("password");
+
+        if (email) {
+            document.querySelector("input[placeholder='name@example.com']").value = email;
+        }
+        if (password) {
+            document.querySelector("input[placeholder='password']").value = password;
+        }
+    });
+</script>
+
+
+
 @code {
     private string? errorMessage;
 

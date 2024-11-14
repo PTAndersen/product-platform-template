@@ -52,5 +52,16 @@ html, body {
     overflow: hidden;
 }
 
+.fade-in-element {
+    opacity: 0;
+    transform: translateY(40px);
+    transition: opacity 1.5s ease-out, transform 1.5s ease-out;
+}
+
+.fade-in-visible {
+    opacity: 1;
+    transform: translateY(0);
+}
+
 
 

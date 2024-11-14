@@ -13,6 +13,10 @@
     margin-bottom: 20px;
 }
 
+.uploaded-file-info {
+    margin-bottom: 1rem;
+}
+
 .table-responsive {
     margin-top: 20px;
 }
@@ -99,4 +103,9 @@
     margin-top: 1rem;
     font-size: 0.9rem;
     color: #6c757d;
+}
+
+h1 {
+    margin-bottom: 20px;
+    text-align: center;
 }

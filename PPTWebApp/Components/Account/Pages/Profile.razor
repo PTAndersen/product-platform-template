@@ -48,8 +48,8 @@
             </div>
 
             <div class="form-group">
-                <label for="password">Change Password</label>
-                <InputText id="password" class="form-control" @bind-Value="userProfile.Password" type="password" placeholder="Enter new password (optional)" />
+                <label for="password">Change Password (locked for demo)</label>
+                <InputText id="password" class="form-control" @bind-Value="userProfile.Password" type="password" placeholder="Enter new password (optional)" readonly />
                 <ValidationMessage For="() => userProfile.Password" />
             </div>
 
