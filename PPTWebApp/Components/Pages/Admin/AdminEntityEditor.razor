@@ -140,8 +140,15 @@
                 case "discounts":
                     if (entityData is Discount discount)
                     {
-                        await DiscountService.UpdateDiscountAsync(discount, CancellationToken.None);
-                        NavigationManager.NavigateTo("/admin");
+                        if (discount.DiscountPercent <= 100 && discount.DiscountPercent >= 0)
+                        {
+                            await DiscountService.UpdateDiscountAsync(discount, CancellationToken.None);
+                            NavigationManager.NavigateTo("/admin");
+                        }
+                        else
+                        {
+                            errorMessage = "Discount is not within 0-100%";
+                        }
                     }
                     break;
 

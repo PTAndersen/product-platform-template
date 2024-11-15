@@ -472,18 +472,25 @@ namespace PPTWebApp.Data
                 Product product1 = new Product()
                 {
                     Name = "Wooden bowl",
-                    Description = "Immaculate bowl made of wood",
+                    Description = "A bowl made of wood",
                     SKU = "WOOD-BOWL",
                     ImageUrl = "images/sageSproutDemo/WoodenBowl.png",
                     ImageCompromise = "Vertical",
-                    Price = 12
+                    Price = 12,
+                    Discount = new Discount()
+                    { 
+                        Name = "Christmas sale",
+                        Description = "Merry Christmas!",
+                        DiscountPercent = 30,
+                        IsActive = true,
+                    }
                 };
                 await _productService.AddProductAsync(product1, CancellationToken.None);
 
                 Product product2 = new Product()
                 {
                     Name = "Wooden cutlery",
-                    Description = "Immaculate cutlery made of wood",
+                    Description = "Cutlery made of wood",
                     SKU = "WOOD-Cutlery",
                     ImageUrl = "images/sageSproutDemo/WoodenCutlery.png",
                     ImageCompromise = "Vertical",
@@ -494,7 +501,7 @@ namespace PPTWebApp.Data
                 Product product3 = new Product()
                 {
                     Name = "Wooden Cup",
-                    Description = "Immaculate cup made of wood",
+                    Description = "A cup made of wood",
                     SKU = "WOOD-CUP",
                     ImageUrl = "images/sageSproutDemo/WoodenCup.png",
                     ImageCompromise = "Vertical",

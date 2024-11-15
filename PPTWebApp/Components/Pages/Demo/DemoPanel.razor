@@ -31,9 +31,9 @@
 
         <div class="panel-content">
             <h3>Demo Panel</h3>
-            <p>This is a fictitious web application, created to demonstrate its functionality.</p>
+            <p>This is the product platform template deployed with a fictitious company to demonstrate the web application's functionality.</p>
             <p>
-                Registering a user account with personal data is not advised.
+                Registering a user account with personal data is not advised. All data is wiped and reset regularly for this demo.
             </p>
             <p>
                 Accounts available for testing:
@@ -41,7 +41,7 @@
                 <strong>User Account:</strong>
                 <button @onclick="() => RedirectToLogin(userEmail, userPassword)" class="btn btn-primary mt-2">Login as User</button>
                 <br />
-                <strong>Admin Account:</strong>
+                <strong>Admin Account:</strong> (unlocks admin panel in the header)
                 <button @onclick="() => RedirectToLogin(adminEmail, adminPassword)" class="btn btn-secondary mt-2">Login as Admin</button>
             </p>
             <p>

@@ -17,9 +17,9 @@ namespace PPTWebApp.Data.Services
 
         public async Task<int> AddDiscountAsync(Discount discount, CancellationToken cancellationToken)
         {
-            if (discount == null)
+            if (discount == null || (discount.DiscountPercent <= 100 && discount.DiscountPercent >= 0))
             {
-                throw new ArgumentNullException(nameof(discount), "Discount cannot be null.");
+                throw new ArgumentNullException(nameof(discount), "Discount cannot be null or not within 0-100%.");
             }
 
             return await _discountRepository.AddDiscountAsync(discount, cancellationToken);

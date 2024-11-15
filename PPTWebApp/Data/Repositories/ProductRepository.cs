@@ -184,8 +184,8 @@ namespace PPTWebApp.Data.Repositories
                         }
 
                         using (var command = new NpgsqlCommand(
-                            "INSERT INTO products (name, description, sku, categoryid, inventoryid, price, imageurl, imagecompromise) " +
-                            "VALUES (@Name, @Description, @Sku, @CategoryId, @InventoryId, @Price, @Imageurl, @Imagecompromise)", connection, transaction))
+                            "INSERT INTO products (name, description, sku, categoryid, inventoryid, discountid, price, imageurl, imagecompromise) " +
+                            "VALUES (@Name, @Description, @Sku, @CategoryId, @InventoryId, @DiscountId, @Price, @Imageurl, @Imagecompromise)", connection, transaction))
                         {
                             command.Parameters.AddWithValue("@Name", product.Name);
                             command.Parameters.AddWithValue("@Description", (object)product.Description ?? DBNull.Value);
@@ -193,6 +193,7 @@ namespace PPTWebApp.Data.Repositories
 
                             command.Parameters.AddWithValue("@CategoryId", categoryId.HasValue ? categoryId.Value : DBNull.Value);
                             command.Parameters.AddWithValue("@InventoryId", inventoryId.HasValue ? inventoryId.Value : DBNull.Value);
+                            command.Parameters.AddWithValue("@DiscountId", discountId.HasValue ? discountId.Value : DBNull.Value);
 
                             command.Parameters.AddWithValue("@Price", product.Price);
                             command.Parameters.AddWithValue("@Imageurl", product.ImageUrl);
@@ -243,7 +244,6 @@ namespace PPTWebApp.Data.Repositories
                         if (product.ProductCategory != null)
                         {
                             var productCategoryRepo = new ProductCategoryRepository(_connectionString);
-                            categoryId = await productCategoryRepo.AddProductCategoryAsync(product.ProductCategory, cancellationToken);
                             if (product.ProductCategory.Id == 0)
                             {
                                 categoryId = await productCategoryRepo.AddProductCategoryAsync(product.ProductCategory, cancellationToken);

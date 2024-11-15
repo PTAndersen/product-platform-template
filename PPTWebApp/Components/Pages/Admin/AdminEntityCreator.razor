@@ -47,7 +47,7 @@
 
 @code {
     [Parameter] public string entityType { get; set; } = "products";
-    
+
     private object? entityData;
     private string errorMessage = string.Empty;
 
@@ -86,8 +86,15 @@
                 case "discount":
                     if (entityData is Discount discount)
                     {
-                        await DiscountService.AddDiscountAsync(discount, CancellationToken.None);
-                        NavigationManager.NavigateTo("/admin");
+                        if (discount.DiscountPercent <= 100 && discount.DiscountPercent >= 0)
+                        {
+                            await DiscountService.AddDiscountAsync(discount, CancellationToken.None);
+                            NavigationManager.NavigateTo("/admin");
+                        }
+                        else
+                        {
+                            errorMessage = "Discount is not within 0-100%";
+                        }
                     }
                     break;
 
