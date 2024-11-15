@@ -13,7 +13,6 @@ using System.Globalization;
 
 var builder = WebApplication.CreateBuilder(args);
 
-Env.Load();
 
 #region Branding
 builder.Configuration.AddJsonFile("branding.json", optional: true, reloadOnChange: true);
@@ -35,6 +34,10 @@ else
 
 #endregion
 
+#region Environment
+
+Env.Load();
+
 /*
 var certificatePath = Environment.GetEnvironmentVariable("CERTIFICATE_PATH");
 var certificatePassword = Environment.GetEnvironmentVariable("CERTIFICATE_PASSWORD");
@@ -50,10 +53,6 @@ builder.Services.AddDataProtection()
     .PersistKeysToFileSystem(new DirectoryInfo(@"/root/.aspnet/DataProtection-Keys"))
     .ProtectKeysWithCertificate(certificate);
 */
-
-var euroCulture = new CultureInfo("fr-FR");
-CultureInfo.DefaultThreadCurrentCulture = euroCulture;
-CultureInfo.DefaultThreadCurrentUICulture = euroCulture;
 
 var isRunningInContainer = Environment.GetEnvironmentVariable("DOTNET_RUNNING_IN_CONTAINER") == "true";
 
@@ -80,6 +79,11 @@ if (string.IsNullOrWhiteSpace(staticFileBaseUrl))
 {
     throw new InvalidOperationException("Static file base url 'staticFileBaseUrl' is either missing or empty.");
 }
+
+#endregion
+
+#region Services
+
 builder.Services.AddSingleton(new AppConfigService { StaticFileBaseUrl = staticFileBaseUrl });
 
 builder.Services.AddScoped<IUserProfileRepository>(provider => new UserProfileRepository(connectionString));
@@ -122,7 +126,6 @@ builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationSc
         options.LogoutPath = "/account/logout";
     });
 
-
 builder.Services.AddCascadingAuthenticationState();
 builder.Services.AddScoped<IdentityUserAccessor>();
 builder.Services.AddScoped<IdentityRedirectManager>();
@@ -150,10 +153,7 @@ builder.Services.AddScoped<IUserActivityRepository>(provider => new UserActivity
 builder.Services.AddScoped<UserActivityService>();
 builder.Services.AddScoped<IOrderRepository>(provider => new OrderRepository(connectionString));
 builder.Services.AddScoped<OrderService>();
-
 builder.Services.AddScoped<CookieConsentService>();
-
-builder.WebHost.UseStaticWebAssets();
 
 builder.Services.AddScoped<AuthenticationStateProvider, IdentityRevalidatingAuthenticationStateProvider>();
 
@@ -163,6 +163,24 @@ builder.Services.AddIdentity<ApplicationUser, IdentityRole>()
     .AddDefaultTokenProviders();
 
 builder.Services.AddSingleton<IEmailSender<ApplicationUser>, IdentityNoOpEmailSender>();
+
+#endregion
+
+
+var customCulture = new CultureInfo("en-US")
+{
+    NumberFormat = new NumberFormatInfo
+    {
+        CurrencySymbol = "€",
+        CurrencyPositivePattern = 3
+    }
+};
+
+CultureInfo.DefaultThreadCurrentCulture = customCulture;
+CultureInfo.DefaultThreadCurrentUICulture = customCulture;
+
+
+builder.WebHost.UseStaticWebAssets();
 
 var app = builder.Build();
 
