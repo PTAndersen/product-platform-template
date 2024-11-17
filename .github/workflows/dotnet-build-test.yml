@@ -38,13 +38,13 @@ jobs:
         run: dotnet --info
 
       - name: Restore dependencies
-        run: dotnet restore --verbosity diagnostic
+        run: dotnet restore --verbosity normal
 
-      - name: Build project
-        run: dotnet build --no-restore --verbosity diagnostic
+      - name: Build solution
+        run: dotnet build --no-restore --verbosity normal --configuration Release
 
       - name: Run tests
-        run: dotnet test --no-build --verbosity diagnostic --collect:"XPlat Code Coverage"
+        run: dotnet test --no-build --verbosity normal --collect:"XPlat Code Coverage"
 
       - name: Debug after failure
         if: failure()
