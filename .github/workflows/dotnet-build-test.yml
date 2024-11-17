@@ -34,12 +34,22 @@ jobs:
       - name: Check Docker status
         run: docker info
 
+      - name: Check .NET SDK version
+        run: dotnet --info
+
       - name: Restore dependencies
-        run: dotnet restore
+        run: dotnet restore --verbosity diagnostic
 
-      - name: Build solution
-        run: dotnet build --no-restore --configuration Release
+      - name: Build project
+        run: dotnet build --no-restore --verbosity diagnostic
 
-      - name: Run tests without coverage
-        run: dotnet test --no-build --verbosity normal
+      - name: Run tests
+        run: dotnet test --no-build --verbosity diagnostic --collect:"XPlat Code Coverage"
 
+      - name: Debug after failure
+        if: failure()
+        run: |
+          echo "Listing current directory contents:"
+          ls -la
+          echo "Environment variables:"
+          env
