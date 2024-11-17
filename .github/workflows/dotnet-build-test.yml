@@ -31,25 +31,17 @@ jobs:
         with:
           dotnet-version: '8.0.402'
 
-      - name: Check Docker status
-        run: docker info
-
-      - name: Check .NET SDK version
-        run: dotnet --info
-
       - name: Restore dependencies
-        run: dotnet restore --verbosity normal
+        run: dotnet restore
 
-      - name: Build solution
-        run: dotnet build --no-restore --verbosity normal --configuration Release
+        # Build the project (Debug Configuration for Testing)
+      - name: Build for Testing
+        run: dotnet build --no-restore --configuration Debug --verbosity normal
 
-      - name: Run tests
+      # Run tests (Debug Configuration)
+      - name: Run Tests with Debug Configuration
         run: dotnet test --no-build --verbosity normal --collect:"XPlat Code Coverage"
 
-      - name: Debug after failure
-        if: failure()
-        run: |
-          echo "Listing current directory contents:"
-          ls -la
-          echo "Environment variables:"
-          env
+      # Build the project (Release Configuration for Production Validation)
+      - name: Build for Release
+        run: dotnet build --no-restore --configuration Release --verbosity normal
