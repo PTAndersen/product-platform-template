@@ -13,15 +13,6 @@ jobs:
   build:
     runs-on: ubuntu-latest
 
-    services:
-      docker:
-        image: docker:20.10.24
-        options: --privileged
-        ports:
-          - 5432:5432
-        volumes:
-          - /var/run/docker.sock:/var/run/docker.sock
-
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
@@ -29,16 +20,19 @@ jobs:
       - name: Setup .NET
         uses: actions/setup-dotnet@v3
         with:
-          dotnet-version: '8.0.x'
-
-      - name: Check Docker status
-        run: docker info
+          dotnet-version: '8.0.402'
 
       - name: Restore dependencies
         run: dotnet restore
 
-      - name: Build solution
-        run: dotnet build --no-restore --configuration Release
+        # Build the project (Debug Configuration for Testing)
+      - name: Build for Testing
+        run: dotnet build --no-restore --configuration Debug --verbosity normal
 
-      - name: Run tests
+        # Run tests (Debug Configuration)
+      - name: Run Tests with Debug Configuration
         run: dotnet test --no-build --verbosity normal --collect:"XPlat Code Coverage"
+
+        # Build the project (Release Configuration for Production Validation)
+      - name: Build for Release
+        run: dotnet build --no-restore --configuration Release --verbosity normal
