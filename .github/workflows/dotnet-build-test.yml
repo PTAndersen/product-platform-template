@@ -25,7 +25,7 @@ jobs:
 
     # Restore dependencies
     - name: Restore dependencies
-      run: dotnet restore
+      run: dotnet restore PPTWebApp.sln
 
     # Build the project
     - name: Build
