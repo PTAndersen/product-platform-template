@@ -34,10 +34,10 @@ jobs:
         run: docker info
 
       - name: Restore dependencies
-        run: dotnet restore PPTWebApp.sln
+        run: dotnet restore
 
       - name: Build solution
-        run: dotnet build PPTWebApp.sln --no-restore --configuration Release
+        run: dotnet build --no-restore --configuration Release
 
       - name: Run tests
-        run: dotnet test PPTWebApp.sln --no-build --verbosity normal --collect:"XPlat Code Coverage"
+        run: dotnet test --no-build --verbosity normal --collect:"XPlat Code Coverage"
