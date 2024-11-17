@@ -5,6 +5,8 @@ VisualStudioVersion = 17.9.34607.119
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "PPTWebApp", "PPTWebApp.csproj", "{3DC99E19-44D8-49DF-B9DE-CAF4368D28EA}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PPTWebApp.Tests", "..\PPTWebApp.Tests\PPTWebApp.Tests.csproj", "{13D6B898-F111-4FA8-9489-AE98F685A8B1}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -15,6 +17,10 @@ Global
 		{3DC99E19-44D8-49DF-B9DE-CAF4368D28EA}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{3DC99E19-44D8-49DF-B9DE-CAF4368D28EA}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{3DC99E19-44D8-49DF-B9DE-CAF4368D28EA}.Release|Any CPU.Build.0 = Release|Any CPU
+		{13D6B898-F111-4FA8-9489-AE98F685A8B1}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{13D6B898-F111-4FA8-9489-AE98F685A8B1}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{13D6B898-F111-4FA8-9489-AE98F685A8B1}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{13D6B898-F111-4FA8-9489-AE98F685A8B1}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
