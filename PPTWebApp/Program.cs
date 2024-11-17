@@ -166,13 +166,19 @@ builder.Services.AddSingleton<IEmailSender<ApplicationUser>, IdentityNoOpEmailSe
 
 #endregion
 
-
-var customCulture = new CultureInfo("en-US")
+//TODO: Fix culture to use en-GB without messing up currency in production
+var customCulture = new CultureInfo("de-DE")
 {
-    NumberFormat = new NumberFormatInfo
+    DateTimeFormat = new DateTimeFormatInfo
     {
-        CurrencySymbol = "€",
-        CurrencyPositivePattern = 3
+        LongDatePattern = "dd MMMM yyyy",
+        ShortDatePattern = "dd MM yyyy",
+        FullDateTimePattern = "dd MMMM yyyy HH:mm:ss",
+
+        MonthNames = CultureInfo.GetCultureInfo("en-US").DateTimeFormat.MonthNames,
+        AbbreviatedMonthNames = CultureInfo.GetCultureInfo("en-US").DateTimeFormat.AbbreviatedMonthNames,
+        DayNames = CultureInfo.GetCultureInfo("en-US").DateTimeFormat.DayNames,
+        AbbreviatedDayNames = CultureInfo.GetCultureInfo("en-US").DateTimeFormat.AbbreviatedDayNames,
     }
 };
 
