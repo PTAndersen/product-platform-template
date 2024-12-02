@@ -8,6 +8,7 @@ services:
       - "--rolling-restart"
     volumes:
       - "/var/run/docker.sock:/var/run/docker.sock:ro"
+  
   postgres:
     image: postgres:latest
     environment:
@@ -24,7 +25,6 @@ services:
       timeout: 10s
       retries: 3
       start_period: 10s
-
 
   traefik:
     image: traefik:v2.9
@@ -62,7 +62,7 @@ services:
     image: ${DOCKER_USERNAME}/pptwebapp:latest
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.pptwebapp.rule=Host(`demowebapp.${DOMAIN_NAME}`)"
+      - "traefik.http.routers.pptwebapp.rule=Host(`${DOMAIN_NAME}`)"
       - "traefik.http.routers.pptwebapp.entrypoints=websecure"
       - "traefik.http.routers.pptwebapp.tls.certresolver=myresolver"
       - "traefik.http.services.pptwebapp.loadbalancer.server.port=8080"
@@ -88,22 +88,6 @@ services:
       - data_protection_keys:/root/.aspnet/DataProtection-Keys
       - ${STATIC_FILES_PATH}:${STATIC_FILES_PATH}
 
-
-  portfolio:
-    image: ${DOCKER_USERNAME}/portfolio:latest
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.portfolio.rule=Host(`${DOMAIN_NAME}`, `${WWW_DOMAIN_NAME}`)"
-      - "traefik.http.routers.portfolio.entrypoints=websecure"
-      - "traefik.http.routers.portfolio.tls.certresolver=myresolver"
-      - "com.centurylinklabs.watchtower.enable=true"
-    networks:
-      - web
-    restart: unless-stopped
-    expose:
-      - "80"
- 
-
   filestorage:
     image: nginx:alpine
     volumes:
@@ -118,11 +102,9 @@ services:
     expose:
       - "80" 
 
-
 networks:
   web:
     driver: bridge
-
 
 volumes:
   postgres_data:
